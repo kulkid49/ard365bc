@@ -16,6 +16,7 @@ import { cn } from '@/lib/utils'
 
 function statusBadgeVariant(status: Customer['aiStatus']) {
   if (status === 'Validated') return 'green'
+  if (status === 'New') return 'teal'
   if (status === 'Blocked') return 'red'
   if (status === 'Credit Issue') return 'yellow'
   return 'yellow'
@@ -289,4 +290,3 @@ export default function CustomerValidationOnboardingPage() {
     </div>
   )
 }
-

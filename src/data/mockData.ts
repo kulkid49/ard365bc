@@ -23,7 +23,7 @@ export type Customer = {
   blockStatus: 'None' | 'Blocked'
   bankDetailsMasked: string
   duplicateRiskPct: number
-  aiStatus: 'Validated' | 'Needs Update' | 'Blocked' | 'Credit Issue'
+  aiStatus: 'Validated' | 'Needs Update' | 'Blocked' | 'Credit Issue' | 'New'
   lastAiTouchAt: string
 }
 
@@ -213,7 +213,7 @@ export const customers: Customer[] = [
     blockStatus: 'None',
     bankDetailsMasked: 'ICICI • ****8041',
     duplicateRiskPct: 2,
-    aiStatus: 'Needs Update',
+    aiStatus: 'New',
     lastAiTouchAt: format(addMinutes(now, -22), 'hh:mm a'),
   },
   {
@@ -506,4 +506,3 @@ export const lifecycleTrace: LifecycleTrace[] = [
   { key: 'cash', label: 'Cash Application', agent: 'Cash Agent', time: '04:42 AM', status: 'complete', meta: 'Cleared' },
   { key: 'closed', label: 'Fully Closed', agent: 'Reporting Agent', time: '04:58 AM', status: 'complete' },
 ]
-
