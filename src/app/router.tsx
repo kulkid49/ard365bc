@@ -2,22 +2,20 @@ import { Navigate, createBrowserRouter } from 'react-router-dom'
 
 import { AppLayout } from '@/layouts/AppLayout'
 import DashboardPage from '@/pages/Dashboard'
-import {
-  AROpenItemsMonitoringPage,
-  AgentsConsolePage,
-  AnalyticsReportingDashboardPage,
-  CashApplicationPaymentsPage,
-  CreditRiskAssessmentPage,
-  CustomerValidationOnboardingPage,
-  DisputeDeductionManagementPage,
-  DunningCollectionsPage,
-  FulfilmentLogisticsMonitoringPage,
-  IntelligentBillingPage,
-  LifecycleTrackerPage,
-  PoIntakeExtractionPage,
-  SalesOrderProcessingPage,
-  SettingsConfigurationPage,
-} from '@/pages/Pages'
+import PoIntakeExtractionPage from '@/pages/PoIntake'
+import CustomerValidationOnboardingPage from '@/pages/CustomerValidation'
+import CreditRiskAssessmentPage from '@/pages/CreditAssessment'
+import SalesOrderProcessingPage from '@/pages/SalesOrders'
+import FulfilmentLogisticsMonitoringPage from '@/pages/Fulfilment'
+import IntelligentBillingPage from '@/pages/IntelligentBilling'
+import AROpenItemsMonitoringPage from '@/pages/ARMonitoring'
+import CashApplicationPaymentsPage from '@/pages/CashApplication'
+import DisputeDeductionManagementPage from '@/pages/Disputes'
+import DunningCollectionsPage from '@/pages/Collections'
+import LifecycleTrackerPage from '@/pages/LifecycleTracker'
+import AgentsConsolePage from '@/pages/AgentsConsole'
+import AnalyticsReportingDashboardPage from '@/pages/Analytics'
+import SettingsConfigurationPage from '@/pages/Settings'
 
 export const router = createBrowserRouter([
   {
@@ -43,4 +41,3 @@ export const router = createBrowserRouter([
     ],
   },
 ])
-
