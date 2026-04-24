@@ -8,10 +8,13 @@ export default {
     extend: {
       colors: {
         qa: {
-          bg: '#F8F9FA',
-          primary: '#0078D4',
-          secondary: '#00B7C3',
+          bg: '#F8FAFC',
+          primary: '#1E40AF',
+          secondary: '#3B82F6',
           action: '#FF6200',
+          success: '#166534',
+          warning: '#CA8A04',
+          error: '#B91C1C',
         },
       },
       boxShadow: {

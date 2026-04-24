@@ -8,9 +8,27 @@ export type IntegrationGuide = {
 export const integrationGuidesByPath: Record<string, IntegrationGuide> = {
   '/': {
     title: 'Dashboard',
-    entitiesAndTools: ['agedAccountsReceivable', 'customerLedgerEntries', 'GetPipelineSummary'],
-    operations: ['Read KPIs, exceptions, activity', 'Refresh summaries on interval'],
-    uiTriggers: ['Auto-refresh indicator', 'KPI cards', 'Agent status pills'],
+    entitiesAndTools: ['GetValueKpis', 'GetPipelineFunnel', 'GetAgentHealthStatus', 'GetCasesRecent'],
+    operations: ['Read real-time KPIs and funnel', 'Drill-down to filtered case lists', 'Show D365 connection health'],
+    uiTriggers: ['KPI cards', 'Process funnel', 'D365 BC status pill', 'Sync Now'],
+  },
+  '/pipeline': {
+    title: 'Transaction Pipeline',
+    entitiesAndTools: ['cases', 'caseStages', 'GetCaseSummary', 'D365 deep links'],
+    operations: ['Query cases with filters', 'Bulk actions (reprocess/escalate/export)', 'Live updates from agent events'],
+    uiTriggers: ['Filters bar', 'Table ↔ Kanban ↔ Timeline toggle', 'Row actions menu', 'Push Selected to D365'],
+  },
+  '/cases': {
+    title: 'Cases Inbox',
+    entitiesAndTools: ['cases', 'casePreview', 'agent actions', 'ExportCasePackage'],
+    operations: ['Triage active cases', 'Route to HITL when needed', 'Re-run current agent step'],
+    uiTriggers: ['Approve & Continue', 'Trigger HITL Review', 'Re-run Current Agent'],
+  },
+  '/cases/:caseId': {
+    title: 'Case Detail / Process Timeline',
+    entitiesAndTools: ['caseTimeline', 'caseDocuments', 'caseExtractedData', 'D365 create/update actions', 'auditTrail'],
+    operations: ['Display 10-step lifecycle', 'Perform step-level actions', 'Push payloads to D365 with preview'],
+    uiTriggers: ['Re-run Current Agent', 'Send to HITL', 'Approve & Continue', 'Export Full Case Package'],
   },
   '/po-intake': {
     title: 'PO Intake & Extraction',
@@ -22,6 +40,18 @@ export const integrationGuidesByPath: Record<string, IntegrationGuide> = {
       'Handoff to Customer/Credit agents when exceptions detected',
     ],
     uiTriggers: ['Connect Inbox', 'Sync Now', 'Quick Extract', 'Re-extract', 'Approve & Create PO in BC'],
+  },
+  '/hitl': {
+    title: 'HITL Workbench – Extraction Review',
+    entitiesAndTools: ['contractExtraction', 'fieldConfidence', 'ValidateCustomerInD365', 'feedbackToModel'],
+    operations: ['Review low-confidence fields', 'Capture human corrections', 'Submit to next agents + D365 validation'],
+    uiTriggers: ['Submit & Continue', 'Re-run AI Extraction', 'Validate Customer in D365'],
+  },
+  '/customers': {
+    title: 'Customer Master Management',
+    entitiesAndTools: ['customers', 'duplicateDetection', 'POST/PATCH Customers (D365)', 'Sync logs'],
+    operations: ['Search and validate customers', 'Onboard new customers with wizard', 'Sync status with D365'],
+    uiTriggers: ['Create Customer in D365 BC', 'Update Customer in D365', 'Run Duplicate Check'],
   },
   '/customer-validation': {
     title: 'Customer Validation & Onboarding',
@@ -36,10 +66,52 @@ export const integrationGuidesByPath: Record<string, IntegrationGuide> = {
     uiTriggers: ['Run Full Risk Scan', 'Update Credit Limit in BC', 'Approve & Proceed to Order'],
   },
   '/sales-orders': {
-    title: 'Sales Order Processing',
-    entitiesAndTools: ['salesOrders', 'salesOrderLines', 'shipAndInvoice / confirm bound actions'],
-    operations: ['POST create sales order', 'Validate ATP + credit', 'Confirm/post order actions'],
-    uiTriggers: ['Create Sales Order from PO', 'Post to BC & Confirm', 'Auto-Confirm & Send to Customer'],
+    title: 'Billing & Sales Order Review',
+    entitiesAndTools: ['salesOrders (draft)', 'items master lookup', 'tax groups', 'POST SalesOrders (D365)'],
+    operations: ['Build SO draft from contract terms', 'Validate items/tax codes', 'Simulate posting and create in D365'],
+    uiTriggers: ['Simulate Posting', 'Preview JSON Payload', 'Create Sales Order in D365 BC'],
+  },
+  '/tax-review': {
+    title: 'Tax Determination Review',
+    entitiesAndTools: ['taxEngine', 'taxGroups (D365)', 'HSN/SAC lookup', 'PATCH SalesOrder tax'],
+    operations: ['Validate GST classification and rates', 'Preview impact and update SO tax'],
+    uiTriggers: ['Validate with D365 Tax Groups', 'Confirm & Continue', 'Escalate to Tax Manager'],
+  },
+  '/approvals': {
+    title: 'Approval Orchestration Center',
+    entitiesAndTools: ['approvalRequests', 'riskFlags', 'approvalChain', 'approval metadata to D365'],
+    operations: ['Inbox for approvals', 'Capture justification + signature', 'Route to next step after approve'],
+    uiTriggers: ['Approve & Continue', 'Reject with Reason', 'Request More Info', 'Escalate'],
+  },
+  '/e-invoice-dispatch': {
+    title: 'E-Invoice & Dispatch Center',
+    entitiesAndTools: ['salesInvoices (D365)', 'IRP APIs', 'dispatch channels', 'delivery tracking'],
+    operations: ['Generate invoice, submit to IRP, dispatch and track delivery', 'Retry IRP and bounce handling'],
+    uiTriggers: ['Generate GST E-Invoice (IRP)', 'Dispatch Invoice', 'Retry IRP', 'Manual Dispatch'],
+  },
+  '/audit-compliance': {
+    title: 'Audit Trail & Compliance Center',
+    entitiesAndTools: ['audit events', 'D365 integration logs', 'GST evidence', 'reconciliation engine'],
+    operations: ['Search and export audit packages', 'Show event payloads and sync gaps', 'Reconcile with D365'],
+    uiTriggers: ['Export Full Audit Package', 'Reconcile with D365', 'Flag for Investigation'],
+  },
+  '/agent-console': {
+    title: 'Agent Monitoring Console',
+    entitiesAndTools: ['GetAgentHealthStatus', 'event stream', 'queue management', 'D365 activity per agent'],
+    operations: ['Monitor health and queues', 'Pause/resume and force runs', 'Review errors and retries'],
+    uiTriggers: ['Pause All', 'Resume All', 'Force Refresh All', 'Retry'],
+  },
+  '/reports': {
+    title: 'Reports & Analytics – Value Realization',
+    entitiesAndTools: ['valueKpis', 'process funnel stats', 'trend series', 'export pipelines'],
+    operations: ['Show ROI and value metrics', 'AS-IS vs TO-BE comparisons', 'Export executive summaries'],
+    uiTriggers: ['Export Executive PDF', 'Export Excel (Raw)', 'Export to Power BI'],
+  },
+  '/configuration': {
+    title: 'Configuration & Administration',
+    entitiesAndTools: ['D365 connection settings', 'IRP settings', 'email settings', 'thresholds and rules'],
+    operations: ['Validate connectivity and endpoints', 'Edit HITL triggers and approval thresholds', 'Apply config with impact preview'],
+    uiTriggers: ['Save All Changes', 'Test Connection', 'Sync Now'],
   },
   '/fulfilment': {
     title: 'Fulfilment & Logistics Monitoring',
@@ -104,5 +176,6 @@ export const integrationGuidesByPath: Record<string, IntegrationGuide> = {
 }
 
 export function getIntegrationGuideForPath(pathname: string): IntegrationGuide {
+  if (pathname.startsWith('/cases/')) return integrationGuidesByPath['/cases/:caseId']
   return integrationGuidesByPath[pathname] ?? integrationGuidesByPath['/']
 }

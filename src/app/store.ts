@@ -8,13 +8,28 @@ export type Agent = {
   name: string
   status: AgentStatus
   detail: string
+  queue: number
+  avgProcessingTimeSec?: number
+  lastActivityMinAgo?: number
+  confidencePct?: number
 }
 
 export type ThemeMode = 'light' | 'dark'
 
+export type UserRole = 'Operator' | 'Approver' | 'Admin' | 'Tax/Legal' | 'IT'
+
 export type CurrentUser = {
   initials: string
   displayName: string
+  role: UserRole
+}
+
+export type D365ConnectionStatus = {
+  state: 'connected' | 'degraded' | 'down'
+  lastSeenSecAgo: number
+  odataHealthy: boolean
+  lastCalls: { name: string; ok: boolean; at: string }[]
+  errorRate24hPct: number
 }
 
 type AppState = {
@@ -26,6 +41,13 @@ type AppState = {
   toggleSidebar: () => void
 
   user: CurrentUser
+  setUserRole: (role: UserRole) => void
+
+  notifications: { hitlPending: number; escalations: number }
+  setNotifications: (patch: Partial<AppState['notifications']>) => void
+
+  d365: D365ConnectionStatus
+  simulateD365Ping: () => void
 
   agents: Agent[]
   setAgentStatus: (agentId: string, status: AgentStatus, detail?: string) => void
@@ -39,15 +61,60 @@ type AppState = {
 }
 
 const defaultAgents: Agent[] = [
-  { id: 'po-extractor', name: 'Extractor', status: 'healthy', detail: 'OCR + NLP pipeline stable' },
-  { id: 'customer-agent', name: 'Customer', status: 'healthy', detail: 'Validation checks healthy' },
-  { id: 'credit-agent', name: 'Credit', status: 'warning', detail: 'Risk model queue elevated' },
-  { id: 'so-agent', name: 'Sales Order', status: 'healthy', detail: 'SO creation stable' },
-  { id: 'fulfilment-agent', name: 'Fulfilment', status: 'healthy', detail: 'Carrier updates normal' },
-  { id: 'billing-agent', name: 'Billing', status: 'healthy', detail: 'Invoice posting stable' },
-  { id: 'ar-agent', name: 'AR Monitor', status: 'warning', detail: 'Aging sync delayed' },
-  { id: 'cash-app-agent', name: 'Cash App', status: 'healthy', detail: 'Bank statement match ok' },
-  { id: 'collections-agent', name: 'Collections', status: 'down', detail: 'Handoff endpoint unavailable' },
+  {
+    id: 'intake-agent',
+    name: 'Intake Agent',
+    status: 'healthy',
+    detail: 'Email + upload ingestion stable',
+    queue: 3,
+    avgProcessingTimeSec: 12,
+    lastActivityMinAgo: 1,
+  },
+  {
+    id: 'contract-intel-agent',
+    name: 'Contract Intelligence',
+    status: 'warning',
+    detail: 'Low-confidence queue elevated',
+    queue: 14,
+    avgProcessingTimeSec: 144,
+    lastActivityMinAgo: 3,
+    confidencePct: 91.2,
+  },
+  {
+    id: 'customer-master-agent',
+    name: 'Customer Master',
+    status: 'healthy',
+    detail: 'D365 duplicate checks healthy',
+    queue: 0,
+    avgProcessingTimeSec: 28,
+    lastActivityMinAgo: 11,
+  },
+  {
+    id: 'billing-agent',
+    name: 'Billing Agent',
+    status: 'healthy',
+    detail: 'SO draft generation stable',
+    queue: 7,
+    avgProcessingTimeSec: 45,
+    lastActivityMinAgo: 8,
+  },
+  {
+    id: 'approval-orchestrator',
+    name: 'Approval Orchestration',
+    status: 'healthy',
+    detail: 'Approvals routing normal',
+    queue: 5,
+    avgProcessingTimeSec: 19,
+    lastActivityMinAgo: 22,
+  },
+  {
+    id: 'einvoice-dispatch-agent',
+    name: 'E-Invoice & Dispatch',
+    status: 'down',
+    detail: 'IRP retry required',
+    queue: 2,
+    lastActivityMinAgo: 41,
+  },
 ]
 
 export const useAppStore = create<AppState>()(
@@ -60,7 +127,37 @@ export const useAppStore = create<AppState>()(
       sidebarCollapsed: false,
       toggleSidebar: () => set({ sidebarCollapsed: !get().sidebarCollapsed }),
 
-      user: { initials: 'S', displayName: 'Samya Soren' },
+      user: { initials: 'S', displayName: 'Samya Soren', role: 'Operator' },
+      setUserRole: (role) => set((s) => ({ user: { ...s.user, role } })),
+
+      notifications: { hitlPending: 12, escalations: 3 },
+      setNotifications: (patch) => set((s) => ({ notifications: { ...s.notifications, ...patch } })),
+
+      d365: {
+        state: 'connected',
+        lastSeenSecAgo: 47,
+        odataHealthy: true,
+        errorRate24hPct: 0.4,
+        lastCalls: [
+          { name: 'Customer', ok: true, at: '11 min ago' },
+          { name: 'Sales Order', ok: true, at: '14 min ago' },
+          { name: 'Invoice', ok: true, at: '18 min ago' },
+        ],
+      },
+      simulateD365Ping: () => {
+        const states: AppState['d365']['state'][] = ['connected', 'degraded', 'down']
+        const next = states[(states.indexOf(get().d365.state) + 1) % states.length]
+        set((s) => ({
+          d365: {
+            ...s.d365,
+            state: next,
+            lastSeenSecAgo: Math.max(12, Math.floor(Math.random() * 90)),
+            odataHealthy: next !== 'down',
+            errorRate24hPct: next === 'connected' ? 0.4 : next === 'degraded' ? 2.7 : 9.4,
+            lastCalls: s.d365.lastCalls.map((c) => ({ ...c, ok: next !== 'down' })),
+          },
+        }))
+      },
 
       agents: defaultAgents,
       setAgentStatus: (agentId, status, detail) =>
@@ -76,8 +173,12 @@ export const useAppStore = create<AppState>()(
       autoRefreshIntervalMs: 30_000,
     }),
     {
-      name: 'q-agent-otc-store',
-      partialize: (state) => ({ theme: state.theme, sidebarCollapsed: state.sidebarCollapsed }),
+      name: 'agentic-ar-store',
+      partialize: (state) => ({
+        theme: state.theme,
+        sidebarCollapsed: state.sidebarCollapsed,
+        user: state.user,
+      }),
     },
   ),
 )

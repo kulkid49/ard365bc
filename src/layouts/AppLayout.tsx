@@ -4,6 +4,7 @@ import { useQueryClient } from '@tanstack/react-query'
 import {
   Activity,
   BarChart3,
+  Bell,
   Bot,
   ChevronLeft,
   ChevronRight,
@@ -15,6 +16,7 @@ import {
   LifeBuoy,
   Moon,
   RefreshCcw,
+  Search,
   Settings,
   Sun,
   Truck,
@@ -26,7 +28,9 @@ import { applyThemeMode } from '@/app/theme'
 import { useAppStore } from '@/app/store'
 import { IntegrationGuidePanel } from '@/components/common/IntegrationGuidePanel'
 import { Avatar, AvatarFallback } from '@/components/ui/avatar'
+import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
+import { Input } from '@/components/ui/input'
 import { cn } from '@/lib/utils'
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip'
 
@@ -34,20 +38,18 @@ type SideItem = { label: string; to: string; icon: React.ComponentType<{ classNa
 
 const sidebarItems: SideItem[] = [
   { label: 'Dashboard', to: '/', icon: LayoutDashboard },
-  { label: 'PO Intake', to: '/po-intake', icon: FileText },
-  { label: 'Customer Validation', to: '/customer-validation', icon: Activity },
-  { label: 'Credit Assessment', to: '/credit-assessment', icon: CreditCard },
+  { label: 'Transaction Pipeline', to: '/pipeline', icon: Activity },
+  { label: 'Cases Inbox', to: '/cases', icon: FileText },
+  { label: 'HITL Workbench', to: '/hitl', icon: LifeBuoy },
+  { label: 'Customer Master', to: '/customers', icon: HandCoins },
   { label: 'Sales Orders', to: '/sales-orders', icon: Wallet },
-  { label: 'Fulfilment', to: '/fulfilment', icon: Truck },
-  { label: 'Intelligent Billing', to: '/intelligent-billing', icon: FileText },
-  { label: 'AR Monitoring', to: '/ar-monitoring', icon: BarChart3 },
-  { label: 'Cash Application', to: '/cash-application', icon: HandCoins },
-  { label: 'Disputes', to: '/disputes', icon: LifeBuoy },
-  { label: 'Dunning & Collections', to: '/collections', icon: Wallet },
-  { label: 'Lifecycle Tracker', to: '/lifecycle-tracker', icon: Activity },
-  { label: 'Agent Monitoring', to: '/agents-console', icon: Bot },
-  { label: 'Analytics', to: '/analytics', icon: BarChart3 },
-  { label: 'Settings', to: '/settings', icon: Settings },
+  { label: 'Tax Review', to: '/tax-review', icon: CreditCard },
+  { label: 'Approvals', to: '/approvals', icon: Activity },
+  { label: 'E-Invoice & Dispatch', to: '/e-invoice-dispatch', icon: Truck },
+  { label: 'Audit & Compliance', to: '/audit-compliance', icon: BarChart3 },
+  { label: 'Agent Console', to: '/agent-console', icon: Bot },
+  { label: 'Reports & Analytics', to: '/reports', icon: BarChart3 },
+  { label: 'Configuration', to: '/configuration', icon: Settings },
 ]
 
 function statusDotClass(status: 'healthy' | 'warning' | 'down') {
@@ -64,6 +66,9 @@ export function AppLayout() {
   const toggleSidebar = useAppStore((s) => s.toggleSidebar)
   const user = useAppStore((s) => s.user)
   const agents = useAppStore((s) => s.agents)
+  const d365 = useAppStore((s) => s.d365)
+  const simulateD365Ping = useAppStore((s) => s.simulateD365Ping)
+  const notifications = useAppStore((s) => s.notifications)
   const lastRefreshedAt = useAppStore((s) => s.lastRefreshedAt)
   const refreshNow = useAppStore((s) => s.refreshNow)
   const autoRefreshEnabled = useAppStore((s) => s.autoRefreshEnabled)
@@ -71,6 +76,8 @@ export function AppLayout() {
 
   const [now, setNow] = useState(() => Date.now())
   const [guideOpen, setGuideOpen] = useState(false)
+  const [d365ModalOpen, setD365ModalOpen] = useState(false)
+  const [globalQuery, setGlobalQuery] = useState('')
 
   useEffect(() => {
     applyThemeMode(theme)
@@ -104,7 +111,14 @@ export function AppLayout() {
         : 'text-slate-600 hover:bg-slate-100 hover:text-slate-900 dark:text-slate-400 dark:hover:bg-slate-900 dark:hover:text-slate-200',
     )
 
-  const agentPills = useMemo(() => agents.slice(0, 9), [agents])
+  const agentPills = useMemo(() => agents.slice(0, 6), [agents])
+  const navItems = useMemo(() => {
+    if (user.role !== 'Admin') return sidebarItems.filter((x) => x.to !== '/configuration')
+    return sidebarItems
+  }, [user.role])
+
+  const d365BadgeVariant: React.ComponentProps<typeof Badge>['variant'] =
+    d365.state === 'connected' ? 'green' : d365.state === 'degraded' ? 'yellow' : 'red'
 
   return (
     <TooltipProvider>
@@ -120,8 +134,8 @@ export function AppLayout() {
               <div className="flex items-center gap-2">
                 <div className="h-7 w-7 rotate-45 rounded-[6px] bg-gradient-to-br from-qa-primary to-qa-secondary" />
                 <div>
-                  <div className="text-sm font-semibold text-slate-900 dark:text-slate-50">Q-Agent OTC v1.0</div>
-                  <div className="text-xs font-medium text-slate-500 dark:text-slate-400">AI Powered</div>
+                  <div className="text-sm font-semibold text-slate-900 dark:text-slate-50">Agentic AR</div>
+                  <div className="text-xs font-medium text-slate-500 dark:text-slate-400">TO-BE Accounts Receivable</div>
                 </div>
               </div>
             ) : null}
@@ -135,7 +149,7 @@ export function AppLayout() {
           </div>
 
           <nav className="mt-3 flex-1 space-y-1">
-            {sidebarItems.map((item) => {
+            {navItems.map((item) => {
               const Icon = item.icon
               return (
                 <NavLink key={item.to} to={item.to} className={sideLinkClass} end={item.to === '/'}>
@@ -149,15 +163,14 @@ export function AppLayout() {
           <div className={cn('mt-4 px-2', sidebarCollapsed && 'px-0')}>
             {!sidebarCollapsed ? (
               <div className="rounded-xl bg-slate-50 p-3 ring-1 ring-slate-200/60 dark:bg-slate-900 dark:ring-slate-800/70">
-                <div className="text-xs font-semibold tracking-wide text-slate-500 dark:text-slate-400">AR TEAM</div>
-                <select
-                  className="mt-2 w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm text-slate-900 outline-none dark:border-slate-800 dark:bg-slate-950 dark:text-slate-50"
-                  defaultValue="AR Team"
-                >
-                  <option>AR Team</option>
-                  <option>OTC Team</option>
-                  <option>Collections</option>
-                </select>
+                <div className="text-xs font-semibold tracking-wide text-slate-500 dark:text-slate-400">CURRENT USER</div>
+                <div className="mt-2 flex items-center justify-between gap-3">
+                  <div className="min-w-0">
+                    <div className="truncate text-sm font-semibold text-slate-900 dark:text-slate-50">{user.displayName}</div>
+                    <div className="text-xs font-medium text-slate-500 dark:text-slate-400">{user.role}</div>
+                  </div>
+                  <Badge variant="teal">Live</Badge>
+                </div>
               </div>
             ) : (
               <div className="grid place-items-center">
@@ -172,12 +185,56 @@ export function AppLayout() {
             <div className="flex items-center gap-3">
               <div className="h-7 w-7 rotate-45 rounded-[6px] bg-gradient-to-br from-qa-primary to-qa-secondary" />
               <div className="leading-tight">
-                <div className="text-sm font-semibold text-slate-900 dark:text-slate-50">Q-Agent OTC v1.0</div>
-                <div className="text-xs font-medium text-slate-500 dark:text-slate-400">AI Powered</div>
+                <div className="text-sm font-semibold text-slate-900 dark:text-slate-50">Agentic AR</div>
+                <div className="text-xs font-medium text-slate-500 dark:text-slate-400">TO-BE Accounts Receivable</div>
               </div>
             </div>
 
+            <div className="relative hidden w-full max-w-xl lg:block">
+              <Search className="pointer-events-none absolute left-3 top-3 h-4 w-4 text-slate-400" />
+              <Input
+                value={globalQuery}
+                onChange={(e) => setGlobalQuery(e.target.value)}
+                className="pl-9"
+                placeholder="Search by Case ID, Customer, SO #, Invoice #, IRN…"
+                onKeyDown={(e) => {
+                  if (e.key !== 'Enter') return
+                  toast.message('Search', { description: globalQuery ? `Query: ${globalQuery}` : 'Enter a query to search' })
+                }}
+              />
+            </div>
+
             <div className="flex items-center gap-2">
+              <button
+                type="button"
+                onClick={() => setD365ModalOpen(true)}
+                className="hidden items-center gap-2 rounded-full bg-white px-3 py-2 text-xs font-semibold text-slate-700 shadow-sm ring-1 ring-slate-200/60 transition-colors hover:bg-slate-50 dark:bg-slate-950 dark:text-slate-200 dark:ring-slate-800/70 dark:hover:bg-slate-900 lg:inline-flex"
+                aria-label="D365 BC status"
+              >
+                <Badge variant={d365BadgeVariant}>D365 BC</Badge>
+                <span className="text-slate-500 dark:text-slate-400">
+                  {d365.state === 'connected' ? 'Connected' : d365.state === 'degraded' ? 'Degraded' : 'Down'} • {d365.lastSeenSecAgo}s ago
+                </span>
+              </button>
+
+              <Button
+                variant="ghost"
+                size="icon"
+                onClick={() =>
+                  toast.message('Notifications', { description: `${notifications.hitlPending} HITL pending • ${notifications.escalations} escalations` })
+                }
+                aria-label="Notifications"
+              >
+                <div className="relative">
+                  <Bell className="h-4 w-4" />
+                  {notifications.hitlPending + notifications.escalations > 0 ? (
+                    <span className="absolute -right-1 -top-1 grid h-4 min-w-4 place-items-center rounded-full bg-qa-action px-1 text-[10px] font-semibold text-white">
+                      {Math.min(99, notifications.hitlPending + notifications.escalations)}
+                    </span>
+                  ) : null}
+                </div>
+              </Button>
+
               <Tooltip>
                 <TooltipTrigger asChild>
                   <Button variant="ghost" size="icon" onClick={() => setGuideOpen(true)} aria-label="Open integration guide">
@@ -235,6 +292,88 @@ export function AppLayout() {
           <IntegrationGuidePanel open={guideOpen} onOpenChange={setGuideOpen} />
         </div>
       </div>
+
+      {d365ModalOpen ? (
+        <div className="fixed inset-0 z-50">
+          <button
+            type="button"
+            className="absolute inset-0 bg-slate-950/40"
+            onClick={() => setD365ModalOpen(false)}
+            aria-label="Close"
+          />
+          <div className="absolute left-1/2 top-24 w-[680px] max-w-[92vw] -translate-x-1/2 rounded-2xl bg-white p-5 shadow-card ring-1 ring-slate-200/60 dark:bg-slate-950 dark:ring-slate-800/70">
+            <div className="flex items-start justify-between gap-3">
+              <div>
+                <div className="text-base font-semibold text-slate-900 dark:text-slate-50">Connection Health – D365 Business Central</div>
+                <div className="mt-1 text-sm text-slate-600 dark:text-slate-400">OData endpoint status and recent API activity</div>
+              </div>
+              <Button variant="secondary" size="sm" onClick={() => setD365ModalOpen(false)}>
+                Close
+              </Button>
+            </div>
+
+            <div className="mt-4 grid grid-cols-1 gap-3 sm:grid-cols-3">
+              <div className="rounded-xl bg-slate-50 p-3 dark:bg-slate-900">
+                <div className="text-xs font-semibold uppercase tracking-wide text-slate-400">Status</div>
+                <div className="mt-2">
+                  <Badge variant={d365BadgeVariant}>
+                    {d365.state === 'connected' ? 'Connected' : d365.state === 'degraded' ? 'Degraded' : 'Down'}
+                  </Badge>
+                </div>
+                <div className="mt-2 text-sm text-slate-600 dark:text-slate-400">Last seen {d365.lastSeenSecAgo}s ago</div>
+              </div>
+              <div className="rounded-xl bg-slate-50 p-3 dark:bg-slate-900">
+                <div className="text-xs font-semibold uppercase tracking-wide text-slate-400">OData</div>
+                <div className="mt-2 text-sm font-semibold text-slate-900 dark:text-slate-50">{d365.odataHealthy ? 'Healthy' : 'Unhealthy'}</div>
+                <div className="mt-1 text-sm text-slate-600 dark:text-slate-400">Error rate (24h): {d365.errorRate24hPct.toFixed(1)}%</div>
+              </div>
+              <div className="rounded-xl bg-slate-50 p-3 dark:bg-slate-900">
+                <div className="text-xs font-semibold uppercase tracking-wide text-slate-400">Actions</div>
+                <div className="mt-2 flex flex-wrap gap-2">
+                  <Button variant="primary" size="sm" onClick={simulateD365Ping}>
+                    Test Connection
+                  </Button>
+                  <Button
+                    variant="secondary"
+                    size="sm"
+                    onClick={() => {
+                      void refresh()
+                      toast.success('Sync requested')
+                    }}
+                  >
+                    Sync Now
+                  </Button>
+                </div>
+              </div>
+            </div>
+
+            <div className="mt-4 rounded-xl bg-white ring-1 ring-slate-200/60 dark:bg-slate-950 dark:ring-slate-800/70">
+              <div className="px-4 py-3 text-sm font-semibold text-slate-900 dark:text-slate-50">Last successful API calls</div>
+              <div className="px-4 pb-4">
+                <div className="grid grid-cols-12 gap-2 text-xs font-semibold uppercase tracking-wide text-slate-400">
+                  <div className="col-span-6">Resource</div>
+                  <div className="col-span-3">Result</div>
+                  <div className="col-span-3">When</div>
+                </div>
+                <div className="mt-2 space-y-2">
+                  {d365.lastCalls.map((c) => (
+                    <div
+                      key={c.name}
+                      className="grid grid-cols-12 items-center gap-2 rounded-xl bg-slate-50 px-3 py-2 text-sm dark:bg-slate-900"
+                    >
+                      <div className="col-span-6 font-medium text-slate-900 dark:text-slate-50">{c.name}</div>
+                      <div className="col-span-3">
+                        <Badge variant={c.ok ? 'green' : 'red'}>{c.ok ? 'OK' : 'Error'}</Badge>
+                      </div>
+                      <div className="col-span-3 text-slate-600 dark:text-slate-400">{c.at}</div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      ) : null}
     </TooltipProvider>
   )
 }

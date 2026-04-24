@@ -4,15 +4,21 @@ import {
   creditProfiles,
   customers,
   disputes,
+  dispatchInvoices,
   invoices,
+  pipelineStageStats,
   lifecycleByKey,
   lifecycleTrace,
+  approvalRequests,
   openArItems,
   payments,
   poIntakeEmails,
   purchaseOrders,
   salesOrders,
   shipments,
+  agenticCasesToday,
+  auditEvents,
+  valueKpis,
 } from '@/data/mockData'
 
 function sleep(ms: number) {
@@ -27,6 +33,36 @@ export async function getPurchaseOrders() {
 export async function getPoIntakeEmails() {
   await sleep(180)
   return poIntakeEmails
+}
+
+export async function getValueKpis() {
+  await sleep(180)
+  return valueKpis
+}
+
+export async function getPipelineStageStats() {
+  await sleep(180)
+  return pipelineStageStats
+}
+
+export async function getAgenticCases() {
+  await sleep(180)
+  return agenticCasesToday
+}
+
+export async function getApprovalRequests() {
+  await sleep(180)
+  return approvalRequests
+}
+
+export async function getDispatchInvoices() {
+  await sleep(180)
+  return dispatchInvoices
+}
+
+export async function getAuditEvents() {
+  await sleep(180)
+  return auditEvents
 }
 
 export async function getCustomers() {

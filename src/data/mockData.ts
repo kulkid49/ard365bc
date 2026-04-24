@@ -622,3 +622,237 @@ export const lifecycleTrace: LifecycleTrace[] = [
   { key: 'cash', label: 'Cash Application', agent: 'Cash Agent', time: '04:42 AM', status: 'complete', meta: 'Cleared' },
   { key: 'closed', label: 'Fully Closed', agent: 'Reporting Agent', time: '04:58 AM', status: 'complete' },
 ]
+
+export type AgenticStage =
+  | 'Document Intake'
+  | 'Extraction'
+  | 'Customer Master'
+  | 'Sales Order'
+  | 'Tax Validation'
+  | 'Approval'
+  | 'Order Posting'
+  | 'Invoice Generation'
+  | 'GST E-Invoice'
+  | 'Dispatch'
+
+export type AgenticCaseStatus = 'Auto' | 'HITL' | 'Completed' | 'Blocked' | 'Failed'
+
+export type AgenticDocumentType = 'SOW' | 'PO' | 'Amendment' | 'Credit Note'
+
+export type AgenticCase = {
+  caseId: string
+  customerName: string
+  documentType: AgenticDocumentType
+  currentStage: AgenticStage
+  responsibleAgent: string
+  confidencePct: number
+  contractValue: number
+  d365SoNo?: string
+  d365InvoiceNo?: string
+  irnStatus?: 'IRN Generated' | 'Pending' | 'Failed'
+  status: AgenticCaseStatus
+  lastUpdated: string
+  syncStatus: 'synced' | 'pending' | 'failed'
+}
+
+const stageOrder: AgenticStage[] = [
+  'Document Intake',
+  'Extraction',
+  'Customer Master',
+  'Sales Order',
+  'Tax Validation',
+  'Approval',
+  'Order Posting',
+  'Invoice Generation',
+  'GST E-Invoice',
+  'Dispatch',
+]
+
+function buildCaseId(i: number) {
+  return `AR-20260424-${String(i).padStart(4, '0')}`
+}
+
+function seededRand(seed: number) {
+  const x = Math.sin(seed) * 10_000
+  return x - Math.floor(x)
+}
+
+export const agenticCasesToday: AgenticCase[] = Array.from({ length: 48 }).map((_, i) => {
+  const seed = 100 + i * 17
+  const r = seededRand(seed)
+  const stage = stageOrder[Math.min(stageOrder.length - 1, Math.floor(r * stageOrder.length))]
+  const confidence = 78 + Math.floor(seededRand(seed + 11) * 22)
+  const value = Math.floor((180_000 + seededRand(seed + 9) * 2_200_000) / 10) * 10
+  const hitl = confidence < 92 || stage === 'Approval' || stage === 'Tax Validation'
+  const status: AgenticCaseStatus = stage === 'Dispatch' ? 'Completed' : hitl ? 'HITL' : 'Auto'
+  const syncStatus: AgenticCase['syncStatus'] = stage === 'Sales Order' || stage === 'Invoice Generation' ? (r > 0.8 ? 'failed' : r > 0.55 ? 'pending' : 'synced') : 'synced'
+  return {
+    caseId: buildCaseId(789 + i),
+    customerName: i % 3 === 0 ? 'Acme Corp Pvt Ltd' : i % 3 === 1 ? 'Nova Retail LLP' : 'Zenith Distributors',
+    documentType: i % 4 === 0 ? 'SOW' : i % 4 === 1 ? 'PO' : i % 4 === 2 ? 'Amendment' : 'Credit Note',
+    currentStage: stage,
+    responsibleAgent:
+      stage === 'Document Intake'
+        ? 'Intake Agent'
+        : stage === 'Extraction'
+          ? 'Contract Intelligence'
+          : stage === 'Customer Master'
+            ? 'Customer Master'
+            : stage === 'Sales Order'
+              ? 'Billing Agent'
+              : stage === 'Tax Validation'
+                ? 'Tax Engine'
+                : stage === 'Approval'
+                  ? 'Approval Orchestration'
+                  : stage === 'GST E-Invoice' || stage === 'Dispatch'
+                    ? 'E-Invoice & Dispatch'
+                    : 'Billing Agent',
+    confidencePct: confidence,
+    contractValue: value,
+    d365SoNo: stageOrder.indexOf(stage) >= 3 ? `SO-2026-${String(4782 + i).padStart(4, '0')}` : undefined,
+    d365InvoiceNo: stageOrder.indexOf(stage) >= 7 ? `INV-2026-${String(3921 + i).padStart(4, '0')}` : undefined,
+    irnStatus: stageOrder.indexOf(stage) >= 8 ? (r > 0.88 ? 'Failed' : r > 0.35 ? 'IRN Generated' : 'Pending') : undefined,
+    status,
+    lastUpdated: format(addMinutes(now, -(2 + Math.floor(seededRand(seed + 31) * 90))), 'dd MMM yyyy, hh:mm a'),
+    syncStatus,
+  }
+})
+
+export type PipelineStageStat = { stage: AgenticStage; count: number; hitl: number; pendingApproval: number; failures: number }
+
+export const pipelineStageStats: PipelineStageStat[] = stageOrder.map((s) => {
+  const items = agenticCasesToday.filter((c) => c.currentStage === s)
+  return {
+    stage: s,
+    count: items.length || (s === 'Document Intake' ? 156 : 0),
+    hitl: items.filter((c) => c.status === 'HITL').length + (s === 'Extraction' ? 8 : 0),
+    pendingApproval: items.filter((c) => c.currentStage === 'Approval').length + (s === 'Sales Order' ? 3 : 0),
+    failures: items.filter((c) => c.status === 'Failed').length + (s === 'Dispatch' ? 3 : 0),
+  }
+})
+
+export type ApprovalRequest = {
+  id: string
+  caseId: string
+  customerName: string
+  requestType: string
+  value: number
+  riskScore: number
+  reasons: string[]
+  d365SoNo?: string
+  pendingSince: string
+  sla: 'On Track' | 'Breaching'
+  status: 'Pending' | 'In Progress'
+}
+
+export const approvalRequests: ApprovalRequest[] = Array.from({ length: 12 }).map((_, i) => {
+  const seed = 500 + i * 29
+  const r = seededRand(seed)
+  const value = Math.floor((850_000 + r * 3_000_000) / 10) * 10
+  return {
+    id: `apr-${1000 + i}`,
+    caseId: buildCaseId(820 + i),
+    customerName: i % 2 === 0 ? 'Acme Corp Pvt Ltd' : 'Orbit Manufacturing Co.',
+    requestType: i % 3 === 0 ? 'Manager Approval' : i % 3 === 1 ? 'Legal Review' : 'Director Approval',
+    value,
+    riskScore: 62 + Math.floor(seededRand(seed + 4) * 35),
+    reasons: i % 3 === 0 ? ['High Value', 'Non-standard terms'] : i % 3 === 1 ? ['Liability clause flagged'] : ['Tax ambiguity', 'High Value'],
+    d365SoNo: `SO-2026-${String(4800 + i).padStart(4, '0')}`,
+    pendingSince: `${1 + Math.floor(r * 5)} hrs ${10 + Math.floor(seededRand(seed + 7) * 50)} min`,
+    sla: r > 0.82 ? 'Breaching' : 'On Track',
+    status: r > 0.55 ? 'Pending' : 'In Progress',
+  }
+})
+
+export type DispatchInvoice = {
+  caseId: string
+  customerName: string
+  d365InvoiceNo: string
+  invoiceValue: number
+  irpStatus: 'IRN Generated' | 'Pending' | 'Failed'
+  irn?: string
+  dispatchStatus: 'Ready' | 'Sent' | 'Delivered' | 'Bounced'
+  channel: 'Email' | 'Portal' | 'EDI'
+  dispatchedAt?: string
+}
+
+export const dispatchInvoices: DispatchInvoice[] = Array.from({ length: 16 }).map((_, i) => {
+  const seed = 800 + i * 13
+  const r = seededRand(seed)
+  const invNo = `INV-2026-${String(3921 + i).padStart(4, '0')}`
+  const irpStatus: DispatchInvoice['irpStatus'] = r > 0.87 ? 'Failed' : r > 0.28 ? 'IRN Generated' : 'Pending'
+  const dispatchStatus: DispatchInvoice['dispatchStatus'] =
+    irpStatus !== 'IRN Generated' ? 'Ready' : r > 0.86 ? 'Bounced' : r > 0.62 ? 'Delivered' : 'Sent'
+  return {
+    caseId: buildCaseId(900 + i),
+    customerName: i % 2 === 0 ? 'Nova Retail LLP' : 'Acme Corp Pvt Ltd',
+    d365InvoiceNo: invNo,
+    invoiceValue: Math.floor((420_000 + seededRand(seed + 9) * 2_800_000) / 10) * 10,
+    irpStatus,
+    irn: irpStatus === 'IRN Generated' ? `IRN${String(10_000_000 + i)}ABC${String(9000 + i)}` : undefined,
+    dispatchStatus,
+    channel: r > 0.7 ? 'Portal' : r > 0.35 ? 'Email' : 'EDI',
+    dispatchedAt: dispatchStatus === 'Ready' ? undefined : format(addMinutes(now, -(20 + Math.floor(seededRand(seed + 21) * 220))), 'dd MMM yyyy, hh:mm a'),
+  }
+})
+
+export type AuditEvent = {
+  id: string
+  caseId: string
+  type: 'AI Decision' | 'Human Action' | 'D365 API Call' | 'IRP Response' | 'Approval' | 'Exception'
+  actor: string
+  summary: string
+  timestamp: string
+  severity: 'info' | 'warn' | 'error'
+}
+
+export const auditEvents: AuditEvent[] = Array.from({ length: 42 }).map((_, i) => {
+  const seed = 1200 + i * 19
+  const r = seededRand(seed)
+  const types: AuditEvent['type'][] = ['AI Decision', 'Human Action', 'D365 API Call', 'IRP Response', 'Approval', 'Exception']
+  const type = types[Math.floor(r * types.length)]
+  const severity: AuditEvent['severity'] = type === 'Exception' || (type === 'IRP Response' && r > 0.78) ? 'error' : type === 'Human Action' ? 'warn' : 'info'
+  return {
+    id: `evt-${2000 + i}`,
+    caseId: buildCaseId(820 + (i % 18)),
+    type,
+    actor:
+      type === 'AI Decision' ? 'Contract Intelligence Agent' : type === 'D365 API Call' ? 'Billing Agent' : type === 'Approval' ? 'Approver' : 'Operator',
+    summary:
+      type === 'D365 API Call'
+        ? 'POST SalesOrder • 201 Created'
+        : type === 'IRP Response'
+          ? 'IRP • IRN Generated'
+          : type === 'Approval'
+            ? 'Approval recorded with justification'
+            : type === 'Exception'
+              ? 'Sync failed • Retry queued'
+              : 'Extraction validated with confidence scores',
+    timestamp: format(addMinutes(now, -(5 + i * 7)), 'dd MMM yyyy, hh:mm a'),
+    severity,
+  }
+})
+
+export type ValueKpis = {
+  activeCases: number
+  hitlInQueue: number
+  automationRatePct: number
+  avgCycleTimeMin: number
+  irpSuccessRatePct: number
+  fteSavedToday: number
+  errorRatePct: number
+  cashFlowAccelerationCr: number
+  gstCompliancePct: number
+}
+
+export const valueKpis: ValueKpis = {
+  activeCases: 47,
+  hitlInQueue: 12,
+  automationRatePct: 92.4,
+  avgCycleTimeMin: 68,
+  irpSuccessRatePct: 99.1,
+  fteSavedToday: 2.8,
+  errorRatePct: 0.8,
+  cashFlowAccelerationCr: 1.84,
+  gstCompliancePct: 100,
+}

@@ -1,252 +1,309 @@
 import { useMemo } from 'react'
 import { useQuery } from '@tanstack/react-query'
-import { format, subDays } from 'date-fns'
-import { Area, AreaChart, Cell, Pie, PieChart, ResponsiveContainer, Tooltip as RechartsTooltip } from 'recharts'
-import { CircleHelp, Clock3, Copy, Sparkles, TrendingUp, Wallet } from 'lucide-react'
+import { Bar, BarChart, CartesianGrid, ResponsiveContainer, Tooltip as RechartsTooltip, XAxis, YAxis } from 'recharts'
+import { ExternalLink, FileUp, RefreshCcw, TriangleAlert } from 'lucide-react'
 import { toast } from 'sonner'
 
-import { fetchDashboardSummary } from '@/api/connectors'
+import { getAgenticCases, getPipelineStageStats, getValueKpis } from '@/api/mockApi'
+import { PageHeader } from '@/components/common/PageHeader'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
-import { cn } from '@/lib/utils'
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table'
+import { useAppStore } from '@/app/store'
+import type { AgenticCase } from '@/data/mockData'
 
-function kpiIconWrap(className?: string) {
-  return cn(
-    'grid h-10 w-10 place-items-center rounded-xl bg-slate-100 text-slate-700 dark:bg-slate-900 dark:text-slate-200',
-    className,
-  )
+function deepLinkToBc(kind: 'so' | 'invoice', no: string) {
+  const base = 'https://businesscentral.dynamics.com/'
+  return `${base}?${kind}=${encodeURIComponent(no)}`
+}
+
+function statusBadgeVariant(status: AgenticCase['status']): React.ComponentProps<typeof Badge>['variant'] {
+  if (status === 'Auto') return 'blue'
+  if (status === 'HITL') return 'yellow'
+  if (status === 'Completed') return 'green'
+  if (status === 'Blocked') return 'orange'
+  return 'red'
+}
+
+function confidenceVariant(confidencePct: number): React.ComponentProps<typeof Badge>['variant'] {
+  if (confidencePct >= 92) return 'green'
+  if (confidencePct >= 80) return 'yellow'
+  return 'red'
 }
 
 export default function DashboardPage() {
-  const { data } = useQuery({ queryKey: ['dashboardSummary'], queryFn: fetchDashboardSummary })
+  const { data: kpis } = useQuery({ queryKey: ['valueKpis'], queryFn: getValueKpis })
+  const { data: stages = [] } = useQuery({ queryKey: ['pipelineStageStats'], queryFn: getPipelineStageStats })
+  const { data: cases = [] } = useQuery({ queryKey: ['agenticCases'], queryFn: getAgenticCases })
 
-  const activityData = useMemo(() => {
-    const points: Array<{ date: string; value: number }> = []
-    for (let i = 29; i >= 0; i -= 1) {
-      const d = subDays(new Date(), i)
-      const day = d.getDate()
-      const valueBase = (day * 13 + i * 7) % 24
-      const spike = day % 7 === 0 ? 18 : day % 5 === 0 ? 12 : 0
-      points.push({ date: format(d, 'MMM d'), value: Math.max(0, Math.round((valueBase + spike) / 3)) })
-    }
-    return points
-  }, [])
+  const agents = useAppStore((s) => s.agents)
+  const notifications = useAppStore((s) => s.notifications)
 
-  const pipeline = data?.pipeline ?? { touchless: 32, pending: 11, blocked: 4 }
-  const pipelineTotal = pipeline.touchless + pipeline.pending + pipeline.blocked
-  const donutData = [
-    { name: 'Touchless', value: pipeline.touchless, color: '#00B050' },
-    { name: 'Pending Review', value: pipeline.pending, color: '#F2C94C' },
-    { name: 'Blocked', value: pipeline.blocked, color: '#E11D48' },
-  ]
+  const kpiCards = useMemo(() => {
+    const v = kpis
+    if (!v) return []
+    return [
+      { label: 'Active Cases', value: String(v.activeCases), sub: `${v.hitlInQueue} in HITL`, badge: { v: '↑12%', variant: 'green' as const } },
+      { label: 'Automation Rate', value: `${v.automationRatePct.toFixed(1)}%`, sub: '≥85% target', badge: { v: '↑', variant: 'green' as const } },
+      { label: 'Avg Cycle Time', value: `${v.avgCycleTimeMin} mins`, sub: '≤120 mins target', badge: { v: '↓', variant: 'green' as const } },
+      { label: 'IRP Success Rate', value: `${v.irpSuccessRatePct.toFixed(1)}%`, sub: '≥98% target', badge: { v: 'Stable', variant: 'neutral' as const } },
+      { label: 'FTE Saved (Today)', value: `${v.fteSavedToday.toFixed(1)}`, sub: 'YTD: 184 hrs', badge: { v: 'On track', variant: 'teal' as const } },
+      { label: 'Error Rate', value: `${v.errorRatePct.toFixed(1)}%`, sub: '≤2% target', badge: { v: '↓', variant: 'green' as const } },
+      { label: 'Cash Flow Accel.', value: `₹${v.cashFlowAccelerationCr.toFixed(2)} Cr`, sub: 'Faster invoicing', badge: { v: '↑', variant: 'green' as const } },
+      { label: 'GST Compliance', value: `${v.gstCompliancePct}%`, sub: 'All e-invoices filed', badge: { v: 'OK', variant: 'green' as const } },
+    ]
+  }, [kpis])
+
+  const stageChartData = useMemo(() => {
+    return stages.map((s) => ({
+      stage: s.stage.replace(' ', '\n'),
+      count: s.count,
+      hitl: s.hitl,
+    }))
+  }, [stages])
+
+  const pipelineRows = useMemo(() => cases.slice(0, 12), [cases])
 
   return (
     <div className="space-y-6">
-      <div className="grid grid-cols-1 gap-4 xl:grid-cols-4">
-        <Card>
-          <CardHeader>
-            <div className="space-y-1">
-              <CardTitle className="text-xs font-semibold tracking-wide text-slate-500 dark:text-slate-400">
-                TOTAL POs
-              </CardTitle>
-              <div className="text-4xl font-semibold text-qa-primary">{data?.totalPOs ?? 142}</div>
-              <div className="flex flex-wrap items-center gap-2">
-                <Badge variant="teal">{data?.newPOs ?? 18} New</Badge>
-                <Badge variant="neutral">{data?.processedPOs ?? 124} Processed</Badge>
+      <PageHeader
+        title="Dashboard"
+        subtitle="Real-time executive + operational cockpit for Agentic AR"
+        actions={[
+          { label: 'Upload New Document', variant: 'primary', onClick: () => toast.success('Upload flow opens here') },
+          { label: 'Manual Case Trigger', variant: 'secondary', onClick: () => toast.message('Manual trigger queued') },
+          { label: 'Reprocess Failed Cases', variant: 'secondary', onClick: () => toast.message('Reprocess queued') },
+        ]}
+        rightSlot={
+          <Button variant="ghost" onClick={() => toast.success('Synced')} aria-label="Sync now">
+            <RefreshCcw className="mr-2 h-4 w-4" />
+            Sync
+          </Button>
+        }
+      />
+
+      <div className="grid grid-cols-1 gap-4 lg:grid-cols-4">
+        {kpiCards.map((c) => (
+          <Card key={c.label}>
+            <CardHeader>
+              <div className="flex items-start justify-between gap-3">
+                <div>
+                  <CardTitle className="text-xs font-semibold tracking-wide text-slate-500 dark:text-slate-400">{c.label}</CardTitle>
+                  <div className="mt-2 text-3xl font-semibold text-slate-900 dark:text-slate-50">{c.value}</div>
+                  <div className="mt-1 text-sm text-slate-600 dark:text-slate-400">{c.sub}</div>
+                </div>
+                <Badge variant={c.badge.variant}>{c.badge.v}</Badge>
               </div>
-            </div>
-            <div className="flex items-center gap-2 text-slate-400">
-              <button
-                type="button"
-                className="grid h-9 w-9 place-items-center rounded-xl hover:bg-slate-100 dark:hover:bg-slate-900"
-                onClick={() => toast.success('Copied metric')}
-                aria-label="Copy"
-              >
-                <Copy className="h-4 w-4" />
-              </button>
-              <div className={kpiIconWrap()}>
-                <CircleHelp className="h-4 w-4" />
-              </div>
-            </div>
-          </CardHeader>
-          <CardContent className="flex items-end justify-between">
-            <div className="text-sm text-slate-600 dark:text-slate-400">12.7% Success</div>
-            <div className="inline-flex items-center gap-1 text-sm font-medium text-emerald-700 dark:text-emerald-300">
-              <TrendingUp className="h-4 w-4" /> +2.3% this week
-            </div>
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardHeader>
-            <div className="space-y-1">
-              <CardTitle className="text-xs font-semibold tracking-wide text-slate-500 dark:text-slate-400">
-                TIME SAVED
-              </CardTitle>
-              <div className="text-4xl font-semibold text-qa-secondary">94h 30m</div>
-              <div className="text-sm text-slate-600 dark:text-slate-400">
-                {data?.timeSavedMinutes?.toLocaleString() ?? '5,670'} mins total
-              </div>
-            </div>
-            <div className={kpiIconWrap('bg-qa-secondary/15 text-qa-primary dark:bg-qa-secondary/20 dark:text-qa-secondary')}>
-              <Clock3 className="h-4 w-4" />
-            </div>
-          </CardHeader>
-          <CardContent className="text-sm text-slate-600 dark:text-slate-400">Est. saving per PO: 42 mins</CardContent>
-        </Card>
-
-        <Card>
-          <CardHeader>
-            <div className="space-y-1">
-              <CardTitle className="text-xs font-semibold tracking-wide text-slate-500 dark:text-slate-400">
-                OPEN AR VALUE
-              </CardTitle>
-              <div className="text-4xl font-semibold text-qa-primary">₹{data?.openARValueCr ?? 14.8} Cr</div>
-              <div className="text-sm text-slate-600 dark:text-slate-400">INR VALUE</div>
-            </div>
-            <div className={kpiIconWrap()}>
-              <Wallet className="h-4 w-4" />
-            </div>
-          </CardHeader>
-          <CardContent className="text-sm text-slate-600 dark:text-slate-400"> </CardContent>
-        </Card>
-
-        <Card>
-          <CardHeader>
-            <div className="space-y-1">
-              <CardTitle className="text-xs font-semibold tracking-wide text-slate-500 dark:text-slate-400">
-                TOUCHLESS RATE
-              </CardTitle>
-              <div className="text-4xl font-semibold text-qa-secondary">{data?.touchlessRatePct ?? 91.4}%</div>
-              <div className="text-sm text-slate-600 dark:text-slate-400">Current month vs last month</div>
-            </div>
-            <div className={kpiIconWrap('bg-qa-primary/10 text-qa-primary dark:bg-qa-primary/15 dark:text-qa-secondary')}>
-              <Sparkles className="h-4 w-4" />
-            </div>
-          </CardHeader>
-          <CardContent className="inline-flex items-center gap-1 text-sm font-medium text-emerald-700 dark:text-emerald-300">
-            <TrendingUp className="h-4 w-4" /> +{data?.touchlessDeltaPct ?? 4.2}% (green arrow)
-          </CardContent>
-        </Card>
-      </div>
-
-      <div className="grid grid-cols-1 gap-4 xl:grid-cols-12">
-        <Card className="xl:col-span-5">
-          <CardHeader>
-            <div>
-              <CardTitle>Process Activity</CardTitle>
-              <div className="mt-2 text-2xl font-semibold text-slate-900 dark:text-slate-50">
-                {data?.monthlyPOs ?? 47} POs this month
-              </div>
-              <div className="mt-1 text-sm text-slate-600 dark:text-slate-400">Activity by date</div>
-            </div>
-          </CardHeader>
-          <CardContent className="h-56">
-            <ResponsiveContainer width="100%" height="100%">
-              <AreaChart data={activityData} margin={{ left: 0, right: 0, top: 10, bottom: 0 }}>
-                <defs>
-                  <linearGradient id="qaActivity" x1="0" y1="0" x2="0" y2="1">
-                    <stop offset="5%" stopColor="#0078D4" stopOpacity={0.35} />
-                    <stop offset="95%" stopColor="#0078D4" stopOpacity={0} />
-                  </linearGradient>
-                </defs>
-                <RechartsTooltip
-                  cursor={{ stroke: 'rgba(0,0,0,0.1)' }}
-                  contentStyle={{
-                    borderRadius: 12,
-                    border: '1px solid rgba(148,163,184,0.35)',
-                    boxShadow: '0 10px 15px -3px rgba(0,0,0,0.06), 0 4px 6px -4px rgba(0,0,0,0.06)',
-                  }}
-                />
-                <Area type="monotone" dataKey="value" stroke="#0078D4" strokeWidth={2} fill="url(#qaActivity)" />
-              </AreaChart>
-            </ResponsiveContainer>
-          </CardContent>
-        </Card>
-
-        <Card className="xl:col-span-4">
-          <CardHeader>
-            <div>
-              <CardTitle>Pipeline Status</CardTitle>
-              <div className="mt-1 text-sm text-slate-600 dark:text-slate-400">Total POs This Month: {pipelineTotal}</div>
-            </div>
-          </CardHeader>
-          <CardContent className="grid grid-cols-12 items-center gap-4">
-            <div className="col-span-6 space-y-3">
-              {donutData.map((item) => {
-                const pct = pipelineTotal === 0 ? 0 : Math.round((item.value / pipelineTotal) * 100)
-                return (
-                  <div key={item.name} className="flex items-center justify-between gap-3">
-                    <div className="flex items-center gap-2">
-                      <span className="h-2.5 w-2.5 rounded-full" style={{ background: item.color }} />
-                      <span className="text-sm text-slate-700 dark:text-slate-300">{item.name}</span>
-                    </div>
-                    <div className="text-sm font-medium text-slate-900 dark:text-slate-50">
-                      {item.value} ({pct}%)
-                    </div>
-                  </div>
-                )
-              })}
-            </div>
-            <div className="col-span-6 h-44">
-              <ResponsiveContainer width="100%" height="100%">
-                <PieChart>
-                  <Pie data={donutData} innerRadius={48} outerRadius={72} paddingAngle={2} dataKey="value">
-                    {donutData.map((entry) => (
-                      <Cell key={entry.name} fill={entry.color} />
-                    ))}
-                  </Pie>
-                </PieChart>
-              </ResponsiveContainer>
-            </div>
-          </CardContent>
-        </Card>
-
-        <Card className="xl:col-span-3">
-          <CardHeader>
-            <div>
-              <CardTitle>Review Required</CardTitle>
-              <div className="mt-1 text-sm text-slate-600 dark:text-slate-400">Active Exceptions</div>
-            </div>
-          </CardHeader>
-          <CardContent className="flex h-56 flex-col items-center justify-center gap-4">
-            <div className="grid h-24 w-24 place-items-center rounded-full bg-qa-action text-4xl font-semibold text-white shadow-card">
-              {data?.exceptionsActive ?? 9}
-            </div>
-            <Button
-              variant="primary"
-              size="lg"
-              className="w-full"
-              onClick={() => toast.success('Queued: Resolve with AI Agents')}
-            >
-              Resolve with AI Agents
-            </Button>
-          </CardContent>
-        </Card>
+            </CardHeader>
+          </Card>
+        ))}
       </div>
 
       <Card>
         <CardHeader>
-          <CardTitle>Recent Agent Activity</CardTitle>
-        </CardHeader>
-        <CardContent className="space-y-3">
-          {[
-            { t: 'Extractor', d: 'PO-20260423-4782 parsed with 97.4% confidence', s: 'now' },
-            { t: 'Customer', d: 'Validated customer: Acme Trading Pvt Ltd (match: 0.93)', s: '2m' },
-            { t: 'Sales Order', d: 'Created Sales Order SO-10482 (touchless)', s: '7m' },
-          ].map((row) => (
-            <div key={row.d} className="flex items-start justify-between gap-4 rounded-xl bg-slate-50 px-4 py-3 dark:bg-slate-900">
-              <div>
-                <div className="text-sm font-semibold text-slate-900 dark:text-slate-50">{row.t}</div>
-                <div className="text-sm text-slate-600 dark:text-slate-400">{row.d}</div>
-              </div>
-              <div className="text-xs font-medium text-slate-500 dark:text-slate-400">{row.s}</div>
+          <div className="flex flex-wrap items-start justify-between gap-3">
+            <div>
+              <CardTitle>Process Funnel</CardTitle>
+              <div className="mt-1 text-sm text-slate-600 dark:text-slate-400">Click stages on Pipeline page for deep drilldowns</div>
             </div>
-          ))}
+            <div className="flex items-center gap-2">
+              <Badge variant="yellow">{notifications.hitlPending} HITL pending</Badge>
+              <Badge variant="red">{notifications.escalations} escalations</Badge>
+            </div>
+          </div>
+        </CardHeader>
+        <CardContent className="h-[280px]">
+          <ResponsiveContainer width="100%" height="100%">
+            <BarChart data={stageChartData} margin={{ left: 0, right: 10, top: 10, bottom: 10 }}>
+              <CartesianGrid strokeDasharray="3 3" stroke="rgba(148,163,184,0.25)" />
+              <XAxis dataKey="stage" tickLine={false} axisLine={false} interval={0} />
+              <YAxis tickLine={false} axisLine={false} />
+              <RechartsTooltip
+                contentStyle={{
+                  borderRadius: 12,
+                  border: '1px solid rgba(148,163,184,0.35)',
+                  boxShadow: '0 10px 15px -3px rgba(0,0,0,0.06), 0 4px 6px -4px rgba(0,0,0,0.06)',
+                }}
+              />
+              <Bar dataKey="count" fill="#1E40AF" radius={[10, 10, 0, 0]} />
+            </BarChart>
+          </ResponsiveContainer>
         </CardContent>
       </Card>
+
+      <div className="grid grid-cols-1 gap-4 xl:grid-cols-12">
+        <Card className="xl:col-span-8">
+          <CardHeader>
+            <div className="flex flex-wrap items-center justify-between gap-3">
+              <div>
+                <CardTitle>Live Transaction Pipeline</CardTitle>
+                <div className="mt-1 text-sm text-slate-600 dark:text-slate-400">10–15 recent cases, sortable and exportable</div>
+              </div>
+              <div className="flex flex-wrap items-center gap-2">
+                <Button variant="secondary" onClick={() => toast.message('Reprocess selected')} size="sm">
+                  Reprocess
+                </Button>
+                <Button variant="secondary" onClick={() => toast.message('Escalate selected')} size="sm">
+                  Escalate
+                </Button>
+                <Button variant="secondary" onClick={() => toast.message('Export to Excel')} size="sm">
+                  Export to Excel
+                </Button>
+              </div>
+            </div>
+          </CardHeader>
+          <CardContent>
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead>Case ID</TableHead>
+                  <TableHead>Customer</TableHead>
+                  <TableHead>Doc</TableHead>
+                  <TableHead>Stage</TableHead>
+                  <TableHead>Confidence</TableHead>
+                  <TableHead>Value (₹)</TableHead>
+                  <TableHead>D365 SO</TableHead>
+                  <TableHead>D365 Invoice</TableHead>
+                  <TableHead>Status</TableHead>
+                  <TableHead>Last Updated</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {pipelineRows.map((r) => (
+                  <TableRow key={r.caseId}>
+                    <TableCell className="font-semibold">{r.caseId}</TableCell>
+                    <TableCell>{r.customerName}</TableCell>
+                    <TableCell>{r.documentType}</TableCell>
+                    <TableCell>
+                      <div className="text-sm font-medium text-slate-900 dark:text-slate-50">{r.currentStage}</div>
+                      <div className="text-xs text-slate-500 dark:text-slate-400">{r.responsibleAgent}</div>
+                    </TableCell>
+                    <TableCell>
+                      <Badge variant={confidenceVariant(r.confidencePct)}>{r.confidencePct.toFixed(1)}%</Badge>
+                    </TableCell>
+                    <TableCell>{r.contractValue.toLocaleString()}</TableCell>
+                    <TableCell>
+                      {r.d365SoNo ? (
+                        <a className="inline-flex items-center gap-1 text-qa-primary underline-offset-2 hover:underline" href={deepLinkToBc('so', r.d365SoNo)} target="_blank" rel="noreferrer">
+                          {r.d365SoNo} <ExternalLink className="h-3.5 w-3.5" />
+                        </a>
+                      ) : (
+                        <span className="text-slate-400">—</span>
+                      )}
+                    </TableCell>
+                    <TableCell>
+                      {r.d365InvoiceNo ? (
+                        <a className="inline-flex items-center gap-1 text-qa-primary underline-offset-2 hover:underline" href={deepLinkToBc('invoice', r.d365InvoiceNo)} target="_blank" rel="noreferrer">
+                          {r.d365InvoiceNo} <ExternalLink className="h-3.5 w-3.5" />
+                        </a>
+                      ) : (
+                        <span className="text-slate-400">—</span>
+                      )}
+                    </TableCell>
+                    <TableCell>
+                      <Badge variant={statusBadgeVariant(r.status)}>{r.status}</Badge>
+                    </TableCell>
+                    <TableCell className="text-slate-600 dark:text-slate-400">{r.lastUpdated}</TableCell>
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
+          </CardContent>
+        </Card>
+
+        <div className="grid gap-4 xl:col-span-4">
+          <Card>
+            <CardHeader>
+              <CardTitle>Critical Alerts</CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-2">
+              {[
+                { t: 'HITL pending > 2hrs', d: 'Data Extraction • 3 cases', v: 'Retry', variant: 'yellow' as const },
+                { t: 'IRP API failure', d: 'E-invoice submission • 1 case', v: 'Retry', variant: 'red' as const },
+                { t: 'Delivery bounces', d: 'Dispatch • 2 invoices', v: 'Review', variant: 'orange' as const },
+                { t: 'New customer pending', d: 'Customer Master • 1 onboarding', v: 'Open', variant: 'teal' as const },
+              ].map((x) => (
+                <div key={x.t} className="flex items-start justify-between gap-3 rounded-xl bg-slate-50 px-3 py-3 dark:bg-slate-900">
+                  <div className="min-w-0">
+                    <div className="flex items-center gap-2">
+                      <TriangleAlert className="h-4 w-4 text-slate-500 dark:text-slate-400" />
+                      <div className="truncate text-sm font-semibold text-slate-900 dark:text-slate-50">{x.t}</div>
+                      <Badge variant={x.variant}>{x.variant === 'red' ? 'Critical' : x.variant === 'yellow' ? 'Warn' : 'Info'}</Badge>
+                    </div>
+                    <div className="mt-1 text-sm text-slate-600 dark:text-slate-400">{x.d}</div>
+                  </div>
+                  <Button variant="secondary" size="sm" onClick={() => toast.message(x.t)}>
+                    {x.v}
+                  </Button>
+                </div>
+              ))}
+            </CardContent>
+          </Card>
+
+          <Card>
+            <CardHeader>
+              <CardTitle>Agent Health</CardTitle>
+            </CardHeader>
+            <CardContent className="grid grid-cols-1 gap-3">
+              {agents.map((a) => (
+                <div key={a.id} className="rounded-xl bg-white p-3 ring-1 ring-slate-200/60 dark:bg-slate-950 dark:ring-slate-800/70">
+                  <div className="flex items-start justify-between gap-3">
+                    <div className="min-w-0">
+                      <div className="truncate text-sm font-semibold text-slate-900 dark:text-slate-50">{a.name}</div>
+                      <div className="mt-1 text-sm text-slate-600 dark:text-slate-400">{a.detail}</div>
+                    </div>
+                    <Badge variant={a.status === 'healthy' ? 'green' : a.status === 'warning' ? 'yellow' : 'red'}>
+                      {a.status === 'healthy' ? 'Healthy' : a.status === 'warning' ? 'Degraded' : 'Error'}
+                    </Badge>
+                  </div>
+                  <div className="mt-3 flex flex-wrap items-center gap-2 text-xs font-medium text-slate-600 dark:text-slate-400">
+                    <span className="rounded-full bg-slate-100 px-2 py-1 dark:bg-slate-900">Queue: {a.queue}</span>
+                    {a.avgProcessingTimeSec != null ? (
+                      <span className="rounded-full bg-slate-100 px-2 py-1 dark:bg-slate-900">Avg: {a.avgProcessingTimeSec}s</span>
+                    ) : null}
+                    {a.lastActivityMinAgo != null ? (
+                      <span className="rounded-full bg-slate-100 px-2 py-1 dark:bg-slate-900">Last: {a.lastActivityMinAgo}m</span>
+                    ) : null}
+                    {a.confidencePct != null ? (
+                      <span className="rounded-full bg-slate-100 px-2 py-1 dark:bg-slate-900">Conf: {a.confidencePct.toFixed(1)}%</span>
+                    ) : null}
+                  </div>
+                  <div className="mt-3 flex flex-wrap items-center gap-2">
+                    <Button variant="secondary" size="sm" onClick={() => toast.message('View logs')}>
+                      View Logs
+                    </Button>
+                    <Button variant="secondary" size="sm" onClick={() => toast.message('Force run')}>
+                      Force Run
+                    </Button>
+                    <Button variant="secondary" size="sm" onClick={() => toast.message('Pause agent')}>
+                      Pause
+                    </Button>
+                  </div>
+                </div>
+              ))}
+            </CardContent>
+          </Card>
+
+          <Card>
+            <CardHeader>
+              <CardTitle>Quick Actions</CardTitle>
+            </CardHeader>
+            <CardContent className="grid grid-cols-1 gap-2">
+              <Button variant="secondary" onClick={() => toast.message('Upload New Document')}>
+                <FileUp className="mr-2 h-4 w-4" />
+                Upload New Document
+              </Button>
+              <Button variant="secondary" onClick={() => toast.message("Export Today's Invoices")}>
+                Export Today’s Invoices
+              </Button>
+              <Button variant="secondary" onClick={() => toast.message('Run GST Reconciliation')}>
+                Run GST Reconciliation
+              </Button>
+            </CardContent>
+          </Card>
+        </div>
+      </div>
     </div>
   )
 }
-
