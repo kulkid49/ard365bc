@@ -10,7 +10,6 @@ import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Input } from '@/components/ui/input'
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table'
-import type { AgenticCase } from '@/data/mockData'
 import { cn } from '@/lib/utils'
 
 function confidenceVariant(confidencePct: number): React.ComponentProps<typeof Badge>['variant'] {

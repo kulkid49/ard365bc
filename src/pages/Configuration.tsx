@@ -200,7 +200,9 @@ export default function ConfigurationPage() {
                   {['Intake confirmation', 'HITL assignment', 'Approval request', 'Invoice dispatch', 'Exception alerts'].map((t) => (
                     <div key={t} className="rounded-xl bg-slate-50 px-4 py-3 dark:bg-slate-900">
                       <div className="text-sm font-semibold text-slate-900 dark:text-slate-50">{t}</div>
-                      <div className="mt-1 text-sm text-slate-600 dark:text-slate-400">Rich text editor + variable picker ({{CaseID}}, {{Customer}}, {{Amount}})</div>
+                      <div className="mt-1 text-sm text-slate-600 dark:text-slate-400">
+                        Rich text editor + variable picker ({'{{CaseID}}'}, {'{{Customer}}'}, {'{{Amount}}'})
+                      </div>
                     </div>
                   ))}
                 </div>
