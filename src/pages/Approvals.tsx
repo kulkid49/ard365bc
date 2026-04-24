@@ -2,6 +2,7 @@ import { useMemo, useState } from 'react'
 import { useQuery } from '@tanstack/react-query'
 import { ExternalLink, FileText, ShieldAlert, Signature, ThumbsDown, ThumbsUp } from 'lucide-react'
 import { toast } from 'sonner'
+import { Link } from 'react-router-dom'
 
 import { getApprovalRequests } from '@/api/mockApi'
 import { PageHeader } from '@/components/common/PageHeader'
@@ -103,7 +104,15 @@ export default function ApprovalsPage() {
                     className={cn('cursor-pointer', selected?.id === a.id && 'bg-qa-secondary/5 dark:bg-qa-secondary/10')}
                     onClick={() => setSelectedId(a.id)}
                   >
-                    <TableCell className="font-semibold">{a.caseId}</TableCell>
+                    <TableCell className="font-semibold">
+                      <Link
+                        className="text-qa-primary underline-offset-2 hover:underline"
+                        to={`/cases/${a.caseId}`}
+                        onClick={(e) => e.stopPropagation()}
+                      >
+                        {a.caseId}
+                      </Link>
+                    </TableCell>
                     <TableCell>{a.customerName}</TableCell>
                     <TableCell>{a.requestType}</TableCell>
                     <TableCell>{a.value.toLocaleString()}</TableCell>
@@ -157,7 +166,11 @@ export default function ApprovalsPage() {
               <>
                 <div className="rounded-xl bg-slate-50 px-4 py-3 dark:bg-slate-900">
                   <div className="text-xs font-semibold uppercase tracking-wide text-slate-400">Case</div>
-                  <div className="mt-1 text-sm font-semibold text-slate-900 dark:text-slate-50">{selected.caseId}</div>
+                  <div className="mt-1 text-sm font-semibold text-slate-900 dark:text-slate-50">
+                    <Link className="text-qa-primary underline-offset-2 hover:underline" to={`/cases/${selected.caseId}`}>
+                      {selected.caseId}
+                    </Link>
+                  </div>
                   <div className="mt-1 text-sm text-slate-600 dark:text-slate-400">{selected.customerName}</div>
                   <div className="mt-2 flex flex-wrap items-center gap-2">
                     <Badge variant="neutral">{selected.requestType}</Badge>

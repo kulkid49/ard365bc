@@ -2,6 +2,7 @@ import { useMemo } from 'react'
 import { useQuery } from '@tanstack/react-query'
 import { Bar, BarChart, CartesianGrid, ResponsiveContainer, Tooltip as RechartsTooltip, XAxis, YAxis } from 'recharts'
 import { ExternalLink, FileUp, RefreshCcw, TriangleAlert } from 'lucide-react'
+import { Link } from 'react-router-dom'
 import { toast } from 'sonner'
 
 import { getAgenticCases, getPipelineStageStats, getValueKpis } from '@/api/mockApi'
@@ -172,7 +173,11 @@ export default function DashboardPage() {
               <TableBody>
                 {pipelineRows.map((r) => (
                   <TableRow key={r.caseId}>
-                    <TableCell className="font-semibold">{r.caseId}</TableCell>
+                    <TableCell className="font-semibold">
+                      <Link className="text-qa-primary underline-offset-2 hover:underline" to={`/cases/${r.caseId}`}>
+                        {r.caseId}
+                      </Link>
+                    </TableCell>
                     <TableCell>{r.customerName}</TableCell>
                     <TableCell>{r.documentType}</TableCell>
                     <TableCell>

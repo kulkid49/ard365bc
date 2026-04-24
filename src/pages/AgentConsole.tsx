@@ -2,6 +2,7 @@ import { useMemo } from 'react'
 import { useQuery } from '@tanstack/react-query'
 import { Activity, Pause, Play, RefreshCcw, RotateCcw, Settings2 } from 'lucide-react'
 import { toast } from 'sonner'
+import { Link } from 'react-router-dom'
 
 import { getAuditEvents } from '@/api/mockApi'
 import { useAppStore } from '@/app/store'
@@ -130,7 +131,10 @@ export default function AgentConsolePage() {
                   <Badge variant={e.severity === 'error' ? 'red' : e.severity === 'warn' ? 'yellow' : 'neutral'}>{e.severity}</Badge>
                 </div>
                 <div className="mt-1 text-xs font-medium text-slate-500 dark:text-slate-400">
-                  {e.caseId} • {e.timestamp}
+                  <Link className="text-qa-primary underline-offset-2 hover:underline" to={`/cases/${e.caseId}`}>
+                    {e.caseId}
+                  </Link>{' '}
+                  • {e.timestamp}
                 </div>
               </div>
             ))}

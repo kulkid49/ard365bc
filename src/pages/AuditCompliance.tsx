@@ -2,6 +2,7 @@ import { useMemo, useState } from 'react'
 import { useQuery } from '@tanstack/react-query'
 import { Copy, ExternalLink, Filter, Search, ShieldCheck } from 'lucide-react'
 import { toast } from 'sonner'
+import { Link } from 'react-router-dom'
 
 import { getAgenticCases, getAuditEvents, getDispatchInvoices } from '@/api/mockApi'
 import { PageHeader } from '@/components/common/PageHeader'
@@ -105,7 +106,15 @@ export default function AuditCompliancePage() {
                     <TableBody>
                       {events.slice(0, 30).map((e) => (
                         <TableRow key={e.id} className="cursor-pointer" onClick={() => setSelectedCaseId(e.caseId)}>
-                          <TableCell className="font-semibold">{e.caseId}</TableCell>
+                          <TableCell className="font-semibold">
+                            <Link
+                              className="text-qa-primary underline-offset-2 hover:underline"
+                              to={`/cases/${e.caseId}`}
+                              onClick={(ev) => ev.stopPropagation()}
+                            >
+                              {e.caseId}
+                            </Link>
+                          </TableCell>
                           <TableCell>{e.type}</TableCell>
                           <TableCell>{e.actor}</TableCell>
                           <TableCell className="min-w-[280px]">{e.summary}</TableCell>
@@ -132,7 +141,15 @@ export default function AuditCompliancePage() {
                     <TableBody>
                       {invoices.map((i) => (
                         <TableRow key={i.d365InvoiceNo} className="cursor-pointer" onClick={() => setSelectedCaseId(i.caseId)}>
-                          <TableCell className="font-semibold">{i.caseId}</TableCell>
+                          <TableCell className="font-semibold">
+                            <Link
+                              className="text-qa-primary underline-offset-2 hover:underline"
+                              to={`/cases/${i.caseId}`}
+                              onClick={(ev) => ev.stopPropagation()}
+                            >
+                              {i.caseId}
+                            </Link>
+                          </TableCell>
                           <TableCell>{i.customerName}</TableCell>
                           <TableCell>
                             <a className="inline-flex items-center gap-1 text-qa-primary underline-offset-2 hover:underline" href={deepLinkInvoice(i.d365InvoiceNo)} target="_blank" rel="noreferrer">
@@ -190,7 +207,15 @@ export default function AuditCompliancePage() {
                           className={cn('cursor-pointer', selectedCaseId === c.caseId && 'bg-qa-secondary/5 dark:bg-qa-secondary/10')}
                           onClick={() => setSelectedCaseId(c.caseId)}
                         >
-                          <TableCell className="font-semibold">{c.caseId}</TableCell>
+                          <TableCell className="font-semibold">
+                            <Link
+                              className="text-qa-primary underline-offset-2 hover:underline"
+                              to={`/cases/${c.caseId}`}
+                              onClick={(ev) => ev.stopPropagation()}
+                            >
+                              {c.caseId}
+                            </Link>
+                          </TableCell>
                           <TableCell>{c.customerName}</TableCell>
                           <TableCell>{c.currentStage}</TableCell>
                           <TableCell>{c.d365InvoiceNo ?? '—'}</TableCell>
@@ -224,7 +249,15 @@ export default function AuditCompliancePage() {
               <CardContent className="space-y-3">
                 <div className="rounded-xl bg-slate-50 px-4 py-3 dark:bg-slate-900">
                   <div className="text-xs font-semibold uppercase tracking-wide text-slate-400">Selected Case</div>
-                  <div className="mt-1 text-sm font-semibold text-slate-900 dark:text-slate-50">{selectedCaseId || '—'}</div>
+                  <div className="mt-1 text-sm font-semibold text-slate-900 dark:text-slate-50">
+                    {selectedCaseId ? (
+                      <Link className="text-qa-primary underline-offset-2 hover:underline" to={`/cases/${selectedCaseId}`}>
+                        {selectedCaseId}
+                      </Link>
+                    ) : (
+                      '—'
+                    )}
+                  </div>
                   <div className="mt-2 flex flex-wrap items-center gap-2">
                     <Button variant="secondary" size="sm" onClick={() => toast.success('Copied')}>
                       <Copy className="mr-2 h-4 w-4" />

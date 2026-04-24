@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useState } from 'react'
 import { useQuery } from '@tanstack/react-query'
 import { ExternalLink, Search, Send, Sparkles } from 'lucide-react'
-import { useSearchParams } from 'react-router-dom'
+import { Link, useSearchParams } from 'react-router-dom'
 import { toast } from 'sonner'
 
 import { getAgenticCases, getDispatchInvoices } from '@/api/mockApi'
@@ -103,7 +103,15 @@ export default function CasesInboxPage() {
                     className={cn('cursor-pointer', selected?.caseId === c.caseId && 'bg-qa-secondary/5 dark:bg-qa-secondary/10')}
                     onClick={() => setSelectedId(c.caseId)}
                   >
-                    <TableCell className="font-semibold">{c.caseId}</TableCell>
+                    <TableCell className="font-semibold">
+                      <Link
+                        className="text-qa-primary underline-offset-2 hover:underline"
+                        to={`/cases/${c.caseId}`}
+                        onClick={(e) => e.stopPropagation()}
+                      >
+                        {c.caseId}
+                      </Link>
+                    </TableCell>
                     <TableCell>{c.customerName}</TableCell>
                     <TableCell>{c.currentStage}</TableCell>
                     <TableCell>{c.responsibleAgent}</TableCell>
@@ -134,7 +142,11 @@ export default function CasesInboxPage() {
               <>
                 <div className="rounded-xl bg-slate-50 px-3 py-3 dark:bg-slate-900">
                   <div className="text-xs font-semibold uppercase tracking-wide text-slate-400">Summary</div>
-                  <div className="mt-1 text-sm font-semibold text-slate-900 dark:text-slate-50">{selected.caseId}</div>
+                  <div className="mt-1 text-sm font-semibold text-slate-900 dark:text-slate-50">
+                    <Link className="text-qa-primary underline-offset-2 hover:underline" to={`/cases/${selected.caseId}`}>
+                      {selected.caseId}
+                    </Link>
+                  </div>
                   <div className="mt-1 text-sm text-slate-600 dark:text-slate-400">{selected.customerName}</div>
                   <div className="mt-2 flex flex-wrap items-center gap-2">
                     <Badge variant="neutral">{selected.documentType}</Badge>

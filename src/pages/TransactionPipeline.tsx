@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useState } from 'react'
 import { useQuery } from '@tanstack/react-query'
 import { ChevronDown, ExternalLink, Filter, LayoutGrid, List, RefreshCcw, Search, Timer } from 'lucide-react'
-import { useSearchParams } from 'react-router-dom'
+import { Link, useNavigate, useSearchParams } from 'react-router-dom'
 import { toast } from 'sonner'
 
 import { getAgenticCases, getDispatchInvoices, getPipelineStageStats } from '@/api/mockApi'
@@ -47,6 +47,7 @@ const stageOrder: AgenticStage[] = [
 ]
 
 export default function TransactionPipelinePage() {
+  const navigate = useNavigate()
   const [searchParams] = useSearchParams()
   const { data: cases = [] } = useQuery({ queryKey: ['agenticCases'], queryFn: getAgenticCases })
   const { data: dispatchInvoices = [] } = useQuery({ queryKey: ['dispatchInvoices'], queryFn: getDispatchInvoices })
@@ -182,7 +183,15 @@ export default function TransactionPipelinePage() {
                       className={cn('cursor-pointer', selected?.caseId === c.caseId && 'bg-qa-secondary/5 dark:bg-qa-secondary/10')}
                       onClick={() => setSelectedCaseId(c.caseId)}
                     >
-                      <TableCell className="font-semibold">{c.caseId}</TableCell>
+                      <TableCell className="font-semibold">
+                        <Link
+                          className="text-qa-primary underline-offset-2 hover:underline"
+                          to={`/cases/${c.caseId}`}
+                          onClick={(e) => e.stopPropagation()}
+                        >
+                          {c.caseId}
+                        </Link>
+                      </TableCell>
                       <TableCell>{c.customerName}</TableCell>
                       <TableCell>{c.documentType}</TableCell>
                       <TableCell className="min-w-[180px]">
@@ -247,7 +256,15 @@ export default function TransactionPipelinePage() {
                           >
                             <div className="flex items-start justify-between gap-3">
                               <div className="min-w-0">
-                                <div className="truncate text-sm font-semibold text-slate-900 dark:text-slate-50">{c.caseId}</div>
+                                <div className="truncate text-sm font-semibold text-slate-900 dark:text-slate-50">
+                                  <Link
+                                    className="text-qa-primary underline-offset-2 hover:underline"
+                                    to={`/cases/${c.caseId}`}
+                                    onClick={(e) => e.stopPropagation()}
+                                  >
+                                    {c.caseId}
+                                  </Link>
+                                </div>
                                 <div className="mt-1 truncate text-sm text-slate-600 dark:text-slate-400">{c.customerName}</div>
                               </div>
                               <Badge variant={confidenceVariant(c.confidencePct)}>{c.confidencePct.toFixed(1)}%</Badge>
@@ -302,7 +319,11 @@ export default function TransactionPipelinePage() {
               <>
                 <div className="rounded-xl bg-slate-50 px-3 py-3 dark:bg-slate-900">
                   <div className="text-xs font-semibold uppercase tracking-wide text-slate-400">Case</div>
-                  <div className="mt-1 text-sm font-semibold text-slate-900 dark:text-slate-50">{selected.caseId}</div>
+                  <div className="mt-1 text-sm font-semibold text-slate-900 dark:text-slate-50">
+                    <Link className="text-qa-primary underline-offset-2 hover:underline" to={`/cases/${selected.caseId}`}>
+                      {selected.caseId}
+                    </Link>
+                  </div>
                   <div className="mt-1 text-sm text-slate-600 dark:text-slate-400">{selected.customerName}</div>
                   <div className="mt-2 flex flex-wrap items-center gap-2">
                     <Badge variant={statusVariant(selected.status)}>{selected.status}</Badge>
@@ -349,7 +370,7 @@ export default function TransactionPipelinePage() {
                   <Button variant="secondary" onClick={() => toast.message('Trigger HITL review')}>
                     Trigger HITL Review
                   </Button>
-                  <Button variant="secondary" onClick={() => toast.message('Open full case detail')}>
+                  <Button variant="secondary" onClick={() => selected && navigate(`/cases/${selected.caseId}`)}>
                     View Full Case
                   </Button>
                 </div>

@@ -2,6 +2,7 @@ import { useMemo, useState } from 'react'
 import { useQuery } from '@tanstack/react-query'
 import { FileText, RefreshCcw, Scale, Sparkles } from 'lucide-react'
 import { toast } from 'sonner'
+import { Link } from 'react-router-dom'
 
 import { getAgenticCases } from '@/api/mockApi'
 import { PageHeader } from '@/components/common/PageHeader'
@@ -92,7 +93,15 @@ export default function TaxReviewPage() {
               >
                 <div className="flex items-start justify-between gap-3">
                   <div className="min-w-0">
-                    <div className="truncate text-sm font-semibold text-slate-900 dark:text-slate-50">{c.caseId}</div>
+                    <div className="truncate text-sm font-semibold text-slate-900 dark:text-slate-50">
+                      <Link
+                        className="text-qa-primary underline-offset-2 hover:underline"
+                        to={`/cases/${c.caseId}`}
+                        onClick={(e) => e.stopPropagation()}
+                      >
+                        {c.caseId}
+                      </Link>
+                    </div>
                     <div className="mt-1 truncate text-sm text-slate-600 dark:text-slate-400">{c.customerName}</div>
                   </div>
                   <Badge variant={confidenceVariant(Math.max(78, Math.min(95, c.confidencePct - 8)))}>{Math.max(78, Math.min(95, c.confidencePct - 8))}%</Badge>

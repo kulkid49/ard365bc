@@ -2,6 +2,7 @@ import { useMemo, useState } from 'react'
 import { useQuery } from '@tanstack/react-query'
 import { ExternalLink, QrCode, RefreshCcw, Send, TriangleAlert } from 'lucide-react'
 import { toast } from 'sonner'
+import { Link } from 'react-router-dom'
 
 import { getDispatchInvoices } from '@/api/mockApi'
 import { PageHeader } from '@/components/common/PageHeader'
@@ -104,7 +105,15 @@ export default function EInvoiceDispatchPage() {
                         className={cn('cursor-pointer', selected?.d365InvoiceNo === i.d365InvoiceNo && 'bg-qa-secondary/5 dark:bg-qa-secondary/10')}
                         onClick={() => setSelectedId(i.d365InvoiceNo)}
                       >
-                        <TableCell className="font-semibold">{i.caseId}</TableCell>
+                        <TableCell className="font-semibold">
+                          <Link
+                            className="text-qa-primary underline-offset-2 hover:underline"
+                            to={`/cases/${i.caseId}`}
+                            onClick={(e) => e.stopPropagation()}
+                          >
+                            {i.caseId}
+                          </Link>
+                        </TableCell>
                         <TableCell>{i.customerName}</TableCell>
                         <TableCell>
                           <a className="inline-flex items-center gap-1 text-qa-primary underline-offset-2 hover:underline" href={deepLinkInvoice(i.d365InvoiceNo)} target="_blank" rel="noreferrer">
