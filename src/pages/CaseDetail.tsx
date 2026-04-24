@@ -1,10 +1,10 @@
-import { useMemo, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import { useParams } from 'react-router-dom'
 import { useQuery } from '@tanstack/react-query'
 import { Copy, ExternalLink, FileText, Play, RefreshCcw, ShieldAlert } from 'lucide-react'
 import { toast } from 'sonner'
 
-import { getAgenticCases, getAuditEvents } from '@/api/mockApi'
+import { getAgenticCases, getAuditEvents, getCaseDocuments } from '@/api/mockApi'
 import { PageHeader } from '@/components/common/PageHeader'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
@@ -12,7 +12,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Input } from '@/components/ui/input'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table'
-import type { AgenticCase, AgenticStage } from '@/data/mockData'
+import type { AgenticCase, AgenticStage, CaseDocument } from '@/data/mockData'
 
 function deepLink(kind: 'so' | 'invoice', no: string) {
   const base = 'https://businesscentral.dynamics.com/'
@@ -53,6 +53,20 @@ export default function CaseDetailPage() {
   const { data: events = [] } = useQuery({ queryKey: ['auditEvents'], queryFn: getAuditEvents })
 
   const found = useMemo(() => allCases.find((c) => c.caseId === caseId) ?? allCases[0], [allCases, caseId])
+  const stableCaseId = found?.caseId ?? caseId
+  const { data: documents = [] } = useQuery({
+    queryKey: ['caseDocuments', stableCaseId],
+    queryFn: () => getCaseDocuments(stableCaseId),
+    enabled: Boolean(stableCaseId),
+  })
+
+  const [selectedDocId, setSelectedDocId] = useState<string>('')
+  const selectedDoc = useMemo(() => documents.find((d) => d.id === selectedDocId) ?? documents[0], [documents, selectedDocId])
+
+  useEffect(() => {
+    setSelectedDocId(documents[0]?.id ?? '')
+  }, [stableCaseId, documents])
+
   const currentIdx = found ? Math.max(0, stages.indexOf(found.currentStage)) : 0
 
   const progressPct = found ? Math.round(((currentIdx + 1) / stages.length) * 100) : 0
@@ -227,26 +241,54 @@ export default function CaseDetailPage() {
                 <div className="rounded-2xl bg-slate-50 p-4 dark:bg-slate-900">
                   <div className="flex items-center justify-between gap-3">
                     <div className="text-sm font-semibold text-slate-900 dark:text-slate-50">PDF Viewer</div>
-                    <Button variant="secondary" size="sm" onClick={() => toast.message('Full screen')}>
+                    <Button
+                      variant="secondary"
+                      size="sm"
+                      onClick={() => {
+                        if (!selectedDoc) return
+                        window.open(selectedDoc.url, '_blank', 'noopener,noreferrer')
+                      }}
+                      disabled={!selectedDoc}
+                    >
                       <FileText className="mr-2 h-4 w-4" />
                       Full Screen
                     </Button>
                   </div>
-                  <div className="mt-3 h-[320px] rounded-xl bg-white ring-1 ring-slate-200/60 dark:bg-slate-950 dark:ring-slate-800/70" />
+                  <div className="mt-3 overflow-hidden rounded-xl bg-white ring-1 ring-slate-200/60 dark:bg-slate-950 dark:ring-slate-800/70">
+                    {selectedDoc ? (
+                      <iframe title={selectedDoc.title} src={selectedDoc.url} className="h-[520px] w-full" />
+                    ) : (
+                      <div className="grid h-[320px] place-items-center text-sm text-slate-600 dark:text-slate-400">No documents available.</div>
+                    )}
+                  </div>
                 </div>
               </div>
               <div className="xl:col-span-4">
                 <div className="rounded-2xl bg-white p-4 ring-1 ring-slate-200/60 dark:bg-slate-950 dark:ring-slate-800/70">
                   <div className="text-sm font-semibold text-slate-900 dark:text-slate-50">Supporting documents</div>
                   <div className="mt-3 space-y-2 text-sm text-slate-600 dark:text-slate-400">
-                    {['SOW_Q3.pdf', 'PO_attachment.pdf', 'Amendment_1.pdf'].map((x) => (
-                      <div key={x} className="flex items-center justify-between rounded-xl bg-slate-50 px-3 py-2 dark:bg-slate-900">
-                        <span>{x}</span>
-                        <Button variant="ghost" size="sm" onClick={() => toast.message('Opened')}>
-                          Open
-                        </Button>
-                      </div>
-                    ))}
+                    {documents.length ? (
+                      documents.map((d) => (
+                        <button
+                          key={d.id}
+                          type="button"
+                          className="flex w-full items-start justify-between gap-3 rounded-xl bg-slate-50 px-3 py-2 text-left transition-colors hover:bg-slate-100 dark:bg-slate-900 dark:hover:bg-slate-800"
+                          onClick={() => setSelectedDocId(d.id)}
+                        >
+                          <div className="min-w-0">
+                            <div className="truncate font-semibold text-slate-900 dark:text-slate-50">{d.title}</div>
+                            <div className="mt-0.5 truncate text-xs font-medium text-slate-500 dark:text-slate-400">
+                              {d.kind} • {d.source} • {d.uploadedAt}
+                            </div>
+                          </div>
+                          <div className="shrink-0">
+                            <Badge variant={selectedDoc?.id === d.id ? 'teal' : 'neutral'}>{selectedDoc?.id === d.id ? 'Viewing' : 'Open'}</Badge>
+                          </div>
+                        </button>
+                      ))
+                    ) : (
+                      <div className="rounded-xl bg-slate-50 px-3 py-3 dark:bg-slate-900">No supporting documents found for this case.</div>
+                    )}
                   </div>
                 </div>
               </div>

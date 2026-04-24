@@ -18,6 +18,7 @@ import {
   shipments,
   agenticCasesToday,
   auditEvents,
+  caseDocuments,
   valueKpis,
 } from '@/data/mockData'
 
@@ -63,6 +64,11 @@ export async function getDispatchInvoices() {
 export async function getAuditEvents() {
   await sleep(180)
   return auditEvents
+}
+
+export async function getCaseDocuments(caseId: string) {
+  await sleep(160)
+  return caseDocuments.filter((d) => d.caseId === caseId)
 }
 
 export async function getCustomers() {

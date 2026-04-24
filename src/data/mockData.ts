@@ -833,6 +833,103 @@ export const auditEvents: AuditEvent[] = Array.from({ length: 42 }).map((_, i) =
   }
 })
 
+export type CaseDocumentKind = 'SOW' | 'PO' | 'Amendment' | 'Invoice' | 'E-Invoice' | 'POD' | 'KYC' | 'Other'
+
+export type CaseDocument = {
+  id: string
+  caseId: string
+  title: string
+  kind: CaseDocumentKind
+  fileName: string
+  mimeType: 'application/pdf'
+  url: string
+  source: 'Email' | 'Portal' | 'EDI' | 'D365' | 'Upload'
+  uploadedAt: string
+}
+
+const sampleDocUrls = {
+  sow: '/docs/SOW_Sample.pdf',
+  po: '/docs/PO_Sample.pdf',
+  amendment: '/docs/Amendment_Sample.pdf',
+  invoice: '/docs/Invoice_Sample.pdf',
+  einvoice: '/docs/EInvoice_IRN_Sample.pdf',
+  pod: '/docs/POD_Sample.pdf',
+  kyc: '/docs/KYC_Sample.pdf',
+} as const
+
+export const caseDocuments: CaseDocument[] = agenticCasesToday.slice(0, 18).flatMap((c, idx) => {
+  const docs: CaseDocument[] = []
+  const baseAt = format(addMinutes(now, -(25 + idx * 7)), 'dd MMM yyyy, hh:mm a')
+
+  docs.push({
+    id: `doc:${c.caseId}:primary`,
+    caseId: c.caseId,
+    title: c.documentType === 'SOW' ? 'Statement of Work' : c.documentType === 'PO' ? 'Purchase Order' : c.documentType === 'Amendment' ? 'Contract Amendment' : 'Credit Note',
+    kind: c.documentType === 'SOW' ? 'SOW' : c.documentType === 'PO' ? 'PO' : c.documentType === 'Amendment' ? 'Amendment' : 'Other',
+    fileName: `${c.documentType}_${c.caseId}.pdf`,
+    mimeType: 'application/pdf',
+    url: c.documentType === 'SOW' ? sampleDocUrls.sow : c.documentType === 'PO' ? sampleDocUrls.po : c.documentType === 'Amendment' ? sampleDocUrls.amendment : sampleDocUrls.po,
+    source: c.documentType === 'PO' ? 'Email' : 'Portal',
+    uploadedAt: baseAt,
+  })
+
+  docs.push({
+    id: `doc:${c.caseId}:kyc`,
+    caseId: c.caseId,
+    title: 'Customer KYC & GSTIN Proof',
+    kind: 'KYC',
+    fileName: `KYC_${c.caseId}.pdf`,
+    mimeType: 'application/pdf',
+    url: sampleDocUrls.kyc,
+    source: 'Upload',
+    uploadedAt: format(addMinutes(now, -(18 + idx * 6)), 'dd MMM yyyy, hh:mm a'),
+  })
+
+  if (c.d365InvoiceNo) {
+    docs.push({
+      id: `doc:${c.caseId}:invoice`,
+      caseId: c.caseId,
+      title: `D365 Invoice ${c.d365InvoiceNo}`,
+      kind: 'Invoice',
+      fileName: `Invoice_${c.d365InvoiceNo}.pdf`,
+      mimeType: 'application/pdf',
+      url: sampleDocUrls.invoice,
+      source: 'D365',
+      uploadedAt: format(addMinutes(now, -(12 + idx * 4)), 'dd MMM yyyy, hh:mm a'),
+    })
+  }
+
+  if (c.irnStatus) {
+    docs.push({
+      id: `doc:${c.caseId}:einvoice`,
+      caseId: c.caseId,
+      title: 'GST E-Invoice (IRN + QR)',
+      kind: 'E-Invoice',
+      fileName: `EInvoice_${c.caseId}.pdf`,
+      mimeType: 'application/pdf',
+      url: sampleDocUrls.einvoice,
+      source: 'Portal',
+      uploadedAt: format(addMinutes(now, -(10 + idx * 4)), 'dd MMM yyyy, hh:mm a'),
+    })
+  }
+
+  if (stageOrder.indexOf(c.currentStage) >= stageOrder.indexOf('Dispatch')) {
+    docs.push({
+      id: `doc:${c.caseId}:pod`,
+      caseId: c.caseId,
+      title: 'Proof of Delivery (POD)',
+      kind: 'POD',
+      fileName: `POD_${c.caseId}.pdf`,
+      mimeType: 'application/pdf',
+      url: sampleDocUrls.pod,
+      source: 'EDI',
+      uploadedAt: format(addMinutes(now, -(6 + idx * 3)), 'dd MMM yyyy, hh:mm a'),
+    })
+  }
+
+  return docs
+})
+
 export type ValueKpis = {
   activeCases: number
   hitlInQueue: number
