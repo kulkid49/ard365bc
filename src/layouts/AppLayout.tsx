@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useMemo, useState } from 'react'
-import { NavLink, Outlet, useNavigate } from 'react-router-dom'
+import { NavLink, Outlet, useLocation, useNavigate } from 'react-router-dom'
 import { useQueryClient } from '@tanstack/react-query'
 import { useQuery } from '@tanstack/react-query'
 import {
@@ -118,6 +118,7 @@ function SiteLogo({ className }: { className?: string }) {
 
 export function AppLayout() {
   const navigate = useNavigate()
+  const location = useLocation()
   const queryClient = useQueryClient()
   const theme = useAppStore((s) => s.theme)
   const toggleTheme = useAppStore((s) => s.toggleTheme)
@@ -441,8 +442,14 @@ export function AppLayout() {
                   <Button
                     variant="ghost"
                     size="icon"
-                    onClick={() => navigate('/?tour=1')}
-                    aria-label="Restart dashboard tour"
+                    onClick={() => {
+                      const params = new URLSearchParams(location.search)
+                      const pathname = location.pathname
+                      const tour = pathname.startsWith('/pipeline') ? 'pipeline' : pathname.startsWith('/cases') ? 'cases' : '1'
+                      params.set('tour', tour)
+                      navigate(`${pathname}?${params.toString()}`)
+                    }}
+                    aria-label="Restart tour"
                   >
                     <LifeBuoy className="h-4 w-4" />
                   </Button>

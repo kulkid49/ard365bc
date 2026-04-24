@@ -6,6 +6,7 @@ import { toast } from 'sonner'
 
 import { getAgenticCases, getDispatchInvoices } from '@/api/mockApi'
 import { PageHeader } from '@/components/common/PageHeader'
+import { CasesInboxTour } from '@/components/common/CasesInboxTour'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
@@ -59,40 +60,52 @@ export default function CasesInboxPage() {
   }, [dispatchInvoices, inbox, q])
 
   const selected = useMemo(() => filtered.find((c) => c.caseId === selectedId) ?? filtered[0], [filtered, selectedId])
+  const sampleCaseId = filtered[0]?.caseId ?? ''
 
   return (
     <div className="space-y-6">
-      <PageHeader
-        title="Cases Inbox"
-        subtitle="Operational inbox for active cases and exceptions"
-        actions={[
-          { label: 'Re-run Current Agent', variant: 'secondary', onClick: () => toast.message('Agent rerun queued') },
-          { label: 'Send to HITL', variant: 'secondary', onClick: () => toast.message('Routed to HITL') },
-          { label: 'Export Case Package', variant: 'secondary', onClick: () => toast.message('Export queued') },
-        ]}
-      />
+      <div data-tour="cases-header">
+        <PageHeader
+          title="Cases Inbox"
+          subtitle="Operational inbox for active cases and exceptions"
+          actions={[
+            { label: 'Re-run Current Agent', variant: 'secondary', onClick: () => toast.message('Agent rerun queued') },
+            { label: 'Send to HITL', variant: 'secondary', onClick: () => toast.message('Routed to HITL') },
+            { label: 'Export Case Package', variant: 'secondary', onClick: () => toast.message('Export queued') },
+          ]}
+          actionsDataTour="cases-actions"
+        />
+      </div>
 
       <div className="grid grid-cols-1 gap-4 xl:grid-cols-12">
-        <Card className="xl:col-span-8">
+        <Card data-tour="cases-table" className="xl:col-span-8">
           <CardHeader>
             <div className="flex flex-wrap items-center justify-between gap-3">
               <CardTitle>Inbox</CardTitle>
-              <div className="relative w-[360px] max-w-[90vw]">
+              <div data-tour="cases-search" className="relative w-[360px] max-w-[90vw]">
                 <Search className="pointer-events-none absolute left-3 top-3 h-4 w-4 text-slate-400" />
                 <Input value={q} onChange={(e) => setQ(e.target.value)} className="pl-9" placeholder="Search Case ID, Customer, SO #, Invoice #, IRN…" />
               </div>
             </div>
           </CardHeader>
           <CardContent>
+            <div data-tour="cases-legend" className="mb-3 flex flex-wrap items-center gap-2">
+              <Badge variant="blue">Auto</Badge>
+              <Badge variant="yellow">HITL</Badge>
+              <Badge variant="green">Completed</Badge>
+              <Badge variant="orange">Blocked</Badge>
+              <Badge variant="red">Failed</Badge>
+              <div className="text-sm text-slate-600 dark:text-slate-400">Status legend</div>
+            </div>
             <Table>
               <TableHeader>
                 <TableRow>
-                  <TableHead>Case ID</TableHead>
-                  <TableHead>Customer</TableHead>
-                  <TableHead>Stage</TableHead>
+                  <TableHead data-tour="cases-col-caseid">Case ID</TableHead>
+                  <TableHead data-tour="cases-col-customer">Customer</TableHead>
+                  <TableHead data-tour="cases-col-stage">Stage</TableHead>
                   <TableHead>Agent</TableHead>
                   <TableHead>Value (₹)</TableHead>
-                  <TableHead>Status</TableHead>
+                  <TableHead data-tour="cases-col-status">Status</TableHead>
                   <TableHead>Last Updated</TableHead>
                 </TableRow>
               </TableHeader>
@@ -100,6 +113,7 @@ export default function CasesInboxPage() {
                 {filtered.map((c) => (
                   <TableRow
                     key={c.caseId}
+                    data-tour={c.caseId === sampleCaseId ? 'cases-sample-row' : undefined}
                     className={cn('cursor-pointer', selected?.caseId === c.caseId && 'bg-qa-secondary/5 dark:bg-qa-secondary/10')}
                     onClick={() => setSelectedId(c.caseId)}
                   >
@@ -124,10 +138,26 @@ export default function CasesInboxPage() {
                 ))}
               </TableBody>
             </Table>
+            <div data-tour="cases-pagination" className="mt-4 flex flex-wrap items-center justify-between gap-2">
+              <div className="text-sm text-slate-600 dark:text-slate-400">
+                Showing 1–{Math.min(filtered.length, 12)} of {filtered.length} cases
+              </div>
+              <div className="flex flex-wrap items-center gap-2">
+                <Button variant="secondary" size="sm" disabled>
+                  Previous
+                </Button>
+                <Button variant="secondary" size="sm" disabled>
+                  Next
+                </Button>
+                <Button variant="secondary" size="sm" onClick={() => toast.message('Export queued')}>
+                  Export (Filtered)
+                </Button>
+              </div>
+            </div>
           </CardContent>
         </Card>
 
-        <Card className="xl:col-span-4">
+        <Card data-tour="cases-preview" className="xl:col-span-4">
           <CardHeader>
             <div className="flex items-start justify-between gap-3">
               <div>
@@ -161,7 +191,7 @@ export default function CasesInboxPage() {
                     <div className="flex items-center justify-between">
                       <span className="text-slate-700 dark:text-slate-300">Sales Order</span>
                       {selected.d365SoNo ? (
-                        <a className="inline-flex items-center gap-1 text-qa-primary underline-offset-2 hover:underline" href={deepLinkToBc('so', selected.d365SoNo)} target="_blank" rel="noreferrer">
+                        <a data-tour="cases-d365-links" className="inline-flex items-center gap-1 text-qa-primary underline-offset-2 hover:underline" href={deepLinkToBc('so', selected.d365SoNo)} target="_blank" rel="noreferrer">
                           Open <ExternalLink className="h-3.5 w-3.5" />
                         </a>
                       ) : (
@@ -201,6 +231,8 @@ export default function CasesInboxPage() {
           </CardContent>
         </Card>
       </div>
+
+      <CasesInboxTour sampleCaseId={sampleCaseId} />
     </div>
   )
 }

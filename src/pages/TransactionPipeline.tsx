@@ -6,6 +6,7 @@ import { toast } from 'sonner'
 
 import { getAgenticCases, getDispatchInvoices, getPipelineStageStats } from '@/api/mockApi'
 import { PageHeader } from '@/components/common/PageHeader'
+import { PipelineTour } from '@/components/common/PipelineTour'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
@@ -82,6 +83,7 @@ export default function TransactionPipelinePage() {
   }, [cases, dispatchInvoices, q])
 
   const selected = useMemo(() => filtered.find((c) => c.caseId === selectedCaseId) ?? filtered[0], [filtered, selectedCaseId])
+  const sampleCaseId = filtered[0]?.caseId ?? ''
 
   const kanban = useMemo(() => {
     const map = new Map<AgenticStage, AgenticCase[]>()
@@ -92,26 +94,29 @@ export default function TransactionPipelinePage() {
 
   return (
     <div className="space-y-6">
-      <PageHeader
-        title="Transaction Pipeline"
-        subtitle={`All Active & Historical Cases • ${filtered.length} visible`}
-        actions={[
-          { label: 'Reprocess Selected', variant: 'secondary', onClick: () => toast.message('Reprocess queued') },
-          { label: 'Bulk Escalate', variant: 'secondary', onClick: () => toast.message('Escalation queued') },
-          { label: 'Export to Excel', variant: 'secondary', onClick: () => toast.message('Export started') },
-        ]}
-        rightSlot={
-          <Button variant="ghost" onClick={() => toast.success('Refreshed')}>
-            <RefreshCcw className="mr-2 h-4 w-4" />
-            Refresh
-          </Button>
-        }
-      />
+      <div data-tour="pipeline-header">
+        <PageHeader
+          title="Transaction Pipeline"
+          subtitle={`All Active & Historical Cases • ${filtered.length} visible`}
+          actions={[
+            { label: 'Reprocess Selected', variant: 'secondary', onClick: () => toast.message('Reprocess queued') },
+            { label: 'Bulk Escalate', variant: 'secondary', onClick: () => toast.message('Escalation queued') },
+            { label: 'Export to Excel', variant: 'secondary', onClick: () => toast.message('Export started') },
+          ]}
+          actionsDataTour="pipeline-bulk-actions"
+          rightSlot={
+            <Button variant="ghost" onClick={() => toast.success('Refreshed')}>
+              <RefreshCcw className="mr-2 h-4 w-4" />
+              Refresh
+            </Button>
+          }
+        />
+      </div>
 
       <Card>
         <CardContent className="pt-5">
           <div className="flex flex-wrap items-center justify-between gap-3">
-            <div className="flex flex-wrap items-center gap-2">
+            <div data-tour="pipeline-view-toggle" className="flex flex-wrap items-center gap-2">
               <Button variant={view === 'table' ? 'primary' : 'secondary'} size="sm" onClick={() => setView('table')}>
                 <List className="mr-2 h-4 w-4" />
                 Table View
@@ -126,10 +131,24 @@ export default function TransactionPipelinePage() {
               </Button>
             </div>
 
-            <div className="flex flex-wrap items-center gap-2">
+            <div data-tour="pipeline-filters" className="flex flex-wrap items-center gap-2">
               <div className="relative w-[320px] max-w-[75vw]">
                 <Search className="pointer-events-none absolute left-3 top-3 h-4 w-4 text-slate-400" />
                 <Input value={q} onChange={(e) => setQ(e.target.value)} className="pl-9" placeholder="Search Case ID, Customer, SO #, Invoice #, IRN…" />
+              </div>
+              <div className="hidden flex-wrap items-center gap-2 lg:flex">
+                {[
+                  { k: 'Date', v: 'Today' },
+                  { k: 'Status', v: 'All' },
+                  { k: 'Stage', v: 'All' },
+                  { k: 'Agent', v: 'All' },
+                  { k: 'Value', v: 'All' },
+                  { k: 'Doc', v: 'All' },
+                ].map((x) => (
+                  <div key={x.k} className="rounded-full bg-slate-100 px-3 py-2 text-xs font-semibold text-slate-700 dark:bg-slate-900 dark:text-slate-300">
+                    {x.k}: {x.v}
+                  </div>
+                ))}
               </div>
               <Button variant="secondary" size="sm" onClick={() => toast.message('Filters drawer opens')}>
                 <Filter className="mr-2 h-4 w-4" />
@@ -153,88 +172,120 @@ export default function TransactionPipelinePage() {
       </Card>
 
       <div className="grid grid-cols-1 gap-4 xl:grid-cols-12">
-        <Card className="xl:col-span-9">
+        <Card data-tour="pipeline-table" className="xl:col-span-9">
           <CardHeader>
             <CardTitle>{view === 'table' ? 'Cases Table' : view === 'kanban' ? 'Kanban by Stage' : 'Timeline View'}</CardTitle>
           </CardHeader>
           <CardContent>
             {view === 'table' ? (
-              <Table>
-                <TableHeader>
-                  <TableRow>
-                    <TableHead>Case ID</TableHead>
-                    <TableHead>Customer</TableHead>
-                    <TableHead>Doc Type</TableHead>
-                    <TableHead>Current Stage</TableHead>
-                    <TableHead>Responsible Agent</TableHead>
-                    <TableHead>Confidence</TableHead>
-                    <TableHead>Value (₹)</TableHead>
-                    <TableHead>D365 SO</TableHead>
-                    <TableHead>D365 Invoice</TableHead>
-                    <TableHead>Status</TableHead>
-                    <TableHead>Last Updated</TableHead>
-                    <TableHead>Actions</TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {filtered.map((c) => (
-                    <TableRow
-                      key={c.caseId}
-                      className={cn('cursor-pointer', selected?.caseId === c.caseId && 'bg-qa-secondary/5 dark:bg-qa-secondary/10')}
-                      onClick={() => setSelectedCaseId(c.caseId)}
-                    >
-                      <TableCell className="font-semibold">
-                        <Link
-                          className="text-qa-primary underline-offset-2 hover:underline"
-                          to={`/cases/${c.caseId}`}
-                          onClick={(e) => e.stopPropagation()}
-                        >
-                          {c.caseId}
-                        </Link>
-                      </TableCell>
-                      <TableCell>{c.customerName}</TableCell>
-                      <TableCell>{c.documentType}</TableCell>
-                      <TableCell className="min-w-[180px]">
-                        <div className="text-sm font-medium text-slate-900 dark:text-slate-50">{c.currentStage}</div>
-                      </TableCell>
-                      <TableCell className="min-w-[160px]">{c.responsibleAgent}</TableCell>
-                      <TableCell>
-                        <Badge variant={confidenceVariant(c.confidencePct)}>{c.confidencePct.toFixed(1)}%</Badge>
-                      </TableCell>
-                      <TableCell>{c.contractValue.toLocaleString()}</TableCell>
-                      <TableCell>
-                        {c.d365SoNo ? (
-                          <a className="inline-flex items-center gap-1 text-qa-primary underline-offset-2 hover:underline" href={deepLinkToBc('so', c.d365SoNo)} target="_blank" rel="noreferrer">
-                            {c.d365SoNo} <ExternalLink className="h-3.5 w-3.5" />
-                          </a>
-                        ) : (
-                          <span className="text-slate-400">—</span>
-                        )}
-                      </TableCell>
-                      <TableCell>
-                        {c.d365InvoiceNo ? (
-                          <a className="inline-flex items-center gap-1 text-qa-primary underline-offset-2 hover:underline" href={deepLinkToBc('invoice', c.d365InvoiceNo)} target="_blank" rel="noreferrer">
-                            {c.d365InvoiceNo} <ExternalLink className="h-3.5 w-3.5" />
-                          </a>
-                        ) : (
-                          <span className="text-slate-400">—</span>
-                        )}
-                      </TableCell>
-                      <TableCell>
-                        <Badge variant={statusVariant(c.status)}>{c.status}</Badge>
-                      </TableCell>
-                      <TableCell className="text-slate-600 dark:text-slate-400">{c.lastUpdated}</TableCell>
-                      <TableCell>
-                        <Button variant="ghost" size="sm" onClick={() => toast.message('Actions menu opens')}>
-                          <ChevronDown className="h-4 w-4" />
-                        </Button>
-                      </TableCell>
+              <>
+                <div data-tour="pipeline-legend" className="mb-3 flex flex-wrap items-center gap-2">
+                  <Badge variant="blue">Auto</Badge>
+                  <Badge variant="yellow">HITL</Badge>
+                  <Badge variant="green">Completed</Badge>
+                  <Badge variant="orange">Blocked</Badge>
+                  <Badge variant="red">Failed</Badge>
+                  <div className="text-sm text-slate-600 dark:text-slate-400">Status legend</div>
+                </div>
+                <Table>
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead data-tour="pipeline-col-caseid">Case ID</TableHead>
+                      <TableHead data-tour="pipeline-col-customer">Customer</TableHead>
+                      <TableHead>Doc Type</TableHead>
+                      <TableHead data-tour="pipeline-col-stage">Current Stage</TableHead>
+                      <TableHead>Responsible Agent</TableHead>
+                      <TableHead data-tour="pipeline-col-confidence">Confidence</TableHead>
+                      <TableHead>Value (₹)</TableHead>
+                      <TableHead data-tour="pipeline-col-d365">D365 SO</TableHead>
+                      <TableHead>D365 Invoice</TableHead>
+                      <TableHead data-tour="pipeline-col-status">Status</TableHead>
+                      <TableHead>Last Updated</TableHead>
+                      <TableHead>Actions</TableHead>
                     </TableRow>
-                  ))}
-                </TableBody>
-              </Table>
+                  </TableHeader>
+                  <TableBody>
+                    {filtered.map((c) => (
+                      <TableRow
+                        key={c.caseId}
+                        data-tour={c.caseId === sampleCaseId ? 'pipeline-sample-row' : undefined}
+                        className={cn('cursor-pointer', selected?.caseId === c.caseId && 'bg-qa-secondary/5 dark:bg-qa-secondary/10')}
+                        onClick={() => setSelectedCaseId(c.caseId)}
+                      >
+                        <TableCell className="font-semibold">
+                          <Link
+                            className="text-qa-primary underline-offset-2 hover:underline"
+                            to={`/cases/${c.caseId}`}
+                            onClick={(e) => e.stopPropagation()}
+                          >
+                            {c.caseId}
+                          </Link>
+                        </TableCell>
+                        <TableCell>{c.customerName}</TableCell>
+                        <TableCell>{c.documentType}</TableCell>
+                        <TableCell className="min-w-[180px]">
+                          <div className="text-sm font-medium text-slate-900 dark:text-slate-50">{c.currentStage}</div>
+                        </TableCell>
+                        <TableCell className="min-w-[160px]">{c.responsibleAgent}</TableCell>
+                        <TableCell>
+                          <Badge variant={confidenceVariant(c.confidencePct)}>{c.confidencePct.toFixed(1)}%</Badge>
+                        </TableCell>
+                        <TableCell>{c.contractValue.toLocaleString()}</TableCell>
+                        <TableCell>
+                          {c.d365SoNo ? (
+                            <a className="inline-flex items-center gap-1 text-qa-primary underline-offset-2 hover:underline" href={deepLinkToBc('so', c.d365SoNo)} target="_blank" rel="noreferrer">
+                              {c.d365SoNo} <ExternalLink className="h-3.5 w-3.5" />
+                            </a>
+                          ) : (
+                            <span className="text-slate-400">—</span>
+                          )}
+                        </TableCell>
+                        <TableCell>
+                          {c.d365InvoiceNo ? (
+                            <a className="inline-flex items-center gap-1 text-qa-primary underline-offset-2 hover:underline" href={deepLinkToBc('invoice', c.d365InvoiceNo)} target="_blank" rel="noreferrer">
+                              {c.d365InvoiceNo} <ExternalLink className="h-3.5 w-3.5" />
+                            </a>
+                          ) : (
+                            <span className="text-slate-400">—</span>
+                          )}
+                        </TableCell>
+                        <TableCell>
+                          <Badge variant={statusVariant(c.status)}>{c.status}</Badge>
+                        </TableCell>
+                        <TableCell className="text-slate-600 dark:text-slate-400">{c.lastUpdated}</TableCell>
+                        <TableCell>
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            data-tour={c.caseId === sampleCaseId ? 'pipeline-row-actions' : undefined}
+                            onClick={() => toast.message('Actions menu opens')}
+                          >
+                            <ChevronDown className="h-4 w-4" />
+                          </Button>
+                        </TableCell>
+                      </TableRow>
+                    ))}
+                  </TableBody>
+                </Table>
+                <div data-tour="pipeline-pagination" className="mt-4 flex flex-wrap items-center justify-between gap-2">
+                  <div className="text-sm text-slate-600 dark:text-slate-400">
+                    Showing 1–{Math.min(filtered.length, 12)} of {filtered.length} cases
+                  </div>
+                  <div className="flex flex-wrap items-center gap-2">
+                    <Button variant="secondary" size="sm" disabled>
+                      Previous
+                    </Button>
+                    <Button variant="secondary" size="sm" disabled>
+                      Next
+                    </Button>
+                    <Button variant="secondary" size="sm" onClick={() => toast.message('Export started')}>
+                      Export (Filtered)
+                    </Button>
+                  </div>
+                </div>
+              </>
             ) : view === 'kanban' ? (
-              <div className="no-scrollbar flex gap-3 overflow-x-auto pb-2">
+              <div data-tour="pipeline-kanban" className="no-scrollbar flex gap-3 overflow-x-auto pb-2">
                 {stageOrder.map((s) => {
                   const col = kanban.get(s) ?? []
                   return (
@@ -310,7 +361,7 @@ export default function TransactionPipelinePage() {
           </CardContent>
         </Card>
 
-        <Card className="xl:col-span-3">
+        <Card data-tour="pipeline-quick-preview" className="xl:col-span-3">
           <CardHeader>
             <CardTitle>Case Quick Preview</CardTitle>
           </CardHeader>
@@ -381,6 +432,12 @@ export default function TransactionPipelinePage() {
           </CardContent>
         </Card>
       </div>
+
+      <PipelineTour
+        view={view}
+        setView={setView}
+        sampleCaseId={sampleCaseId}
+      />
     </div>
   )
 }
