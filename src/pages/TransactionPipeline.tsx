@@ -1,6 +1,7 @@
-import { useMemo, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import { useQuery } from '@tanstack/react-query'
 import { ChevronDown, ExternalLink, Filter, LayoutGrid, List, RefreshCcw, Search, Timer } from 'lucide-react'
+import { useSearchParams } from 'react-router-dom'
 import { toast } from 'sonner'
 
 import { getAgenticCases, getPipelineStageStats } from '@/api/mockApi'
@@ -46,12 +47,18 @@ const stageOrder: AgenticStage[] = [
 ]
 
 export default function TransactionPipelinePage() {
+  const [searchParams] = useSearchParams()
   const { data: cases = [] } = useQuery({ queryKey: ['agenticCases'], queryFn: getAgenticCases })
   const { data: stages = [] } = useQuery({ queryKey: ['pipelineStageStats'], queryFn: getPipelineStageStats })
 
   const [view, setView] = useState<'table' | 'kanban' | 'timeline'>('table')
-  const [q, setQ] = useState('')
+  const [q, setQ] = useState(() => searchParams.get('q') ?? '')
   const [selectedCaseId, setSelectedCaseId] = useState<string>(() => cases[0]?.caseId ?? '')
+
+  useEffect(() => {
+    const next = searchParams.get('q') ?? ''
+    setQ(next)
+  }, [searchParams])
 
   const filtered = useMemo(() => {
     const query = q.trim().toLowerCase()

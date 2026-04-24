@@ -275,6 +275,11 @@ export function AppLayout() {
                     openHit(searchHits[0])
                     return
                   }
+                  if (searchHits.length) {
+                    navigate(`/pipeline?q=${encodeURIComponent(globalQuery.trim())}`)
+                    setSearchOpen(false)
+                    return
+                  }
                   setSearchOpen(true)
                 }}
               />

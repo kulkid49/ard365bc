@@ -1,6 +1,7 @@
-import { useMemo, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import { useQuery } from '@tanstack/react-query'
 import { ExternalLink, Search, Send, Sparkles } from 'lucide-react'
+import { useSearchParams } from 'react-router-dom'
 import { toast } from 'sonner'
 
 import { getAgenticCases } from '@/api/mockApi'
@@ -27,9 +28,14 @@ function statusVariant(status: AgenticCase['status']): React.ComponentProps<type
 }
 
 export default function CasesInboxPage() {
+  const [searchParams] = useSearchParams()
   const { data: cases = [] } = useQuery({ queryKey: ['agenticCases'], queryFn: getAgenticCases })
-  const [q, setQ] = useState('')
+  const [q, setQ] = useState(() => searchParams.get('q') ?? '')
   const [selectedId, setSelectedId] = useState<string>(() => cases[0]?.caseId ?? '')
+
+  useEffect(() => {
+    setQ(searchParams.get('q') ?? '')
+  }, [searchParams])
 
   const inbox = useMemo(() => cases.filter((c) => c.status !== 'Completed').sort((a, b) => (a.lastUpdated < b.lastUpdated ? 1 : -1)), [cases])
   const filtered = useMemo(() => {
