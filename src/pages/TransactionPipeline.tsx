@@ -4,7 +4,7 @@ import { ChevronDown, ExternalLink, Filter, LayoutGrid, List, RefreshCcw, Search
 import { useSearchParams } from 'react-router-dom'
 import { toast } from 'sonner'
 
-import { getAgenticCases, getPipelineStageStats } from '@/api/mockApi'
+import { getAgenticCases, getDispatchInvoices, getPipelineStageStats } from '@/api/mockApi'
 import { PageHeader } from '@/components/common/PageHeader'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
@@ -49,6 +49,7 @@ const stageOrder: AgenticStage[] = [
 export default function TransactionPipelinePage() {
   const [searchParams] = useSearchParams()
   const { data: cases = [] } = useQuery({ queryKey: ['agenticCases'], queryFn: getAgenticCases })
+  const { data: dispatchInvoices = [] } = useQuery({ queryKey: ['dispatchInvoices'], queryFn: getDispatchInvoices })
   const { data: stages = [] } = useQuery({ queryKey: ['pipelineStageStats'], queryFn: getPipelineStageStats })
 
   const [view, setView] = useState<'table' | 'kanban' | 'timeline'>('table')
@@ -63,8 +64,21 @@ export default function TransactionPipelinePage() {
   const filtered = useMemo(() => {
     const query = q.trim().toLowerCase()
     if (!query) return cases
-    return cases.filter((c) => c.caseId.toLowerCase().includes(query) || c.customerName.toLowerCase().includes(query) || (c.d365SoNo?.toLowerCase().includes(query) ?? false))
-  }, [cases, q])
+    const invoiceOrIrnCaseIds = new Set(
+      dispatchInvoices
+        .filter((i) => (i.irn?.toLowerCase().includes(query) ?? false) || i.d365InvoiceNo.toLowerCase().includes(query))
+        .map((i) => i.caseId),
+    )
+    return cases.filter((c) => {
+      return (
+        c.caseId.toLowerCase().includes(query) ||
+        c.customerName.toLowerCase().includes(query) ||
+        (c.d365SoNo?.toLowerCase().includes(query) ?? false) ||
+        (c.d365InvoiceNo?.toLowerCase().includes(query) ?? false) ||
+        invoiceOrIrnCaseIds.has(c.caseId)
+      )
+    })
+  }, [cases, dispatchInvoices, q])
 
   const selected = useMemo(() => filtered.find((c) => c.caseId === selectedCaseId) ?? filtered[0], [filtered, selectedCaseId])
 
@@ -114,7 +128,7 @@ export default function TransactionPipelinePage() {
             <div className="flex flex-wrap items-center gap-2">
               <div className="relative w-[320px] max-w-[75vw]">
                 <Search className="pointer-events-none absolute left-3 top-3 h-4 w-4 text-slate-400" />
-                <Input value={q} onChange={(e) => setQ(e.target.value)} className="pl-9" placeholder="Search Case ID, Customer, SO #, IRN…" />
+                <Input value={q} onChange={(e) => setQ(e.target.value)} className="pl-9" placeholder="Search Case ID, Customer, SO #, Invoice #, IRN…" />
               </div>
               <Button variant="secondary" size="sm" onClick={() => toast.message('Filters drawer opens')}>
                 <Filter className="mr-2 h-4 w-4" />

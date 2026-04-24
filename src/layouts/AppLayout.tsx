@@ -61,6 +61,47 @@ function statusDotClass(status: 'healthy' | 'warning' | 'down') {
   return 'bg-rose-500'
 }
 
+function SiteLogo({ className }: { className?: string }) {
+  return (
+    <svg viewBox="0 0 64 64" className={className} aria-hidden="true" focusable="false">
+      <path
+        d="M10 30 L30 50 L52 28"
+        stroke="rgba(0,0,0,0.14)"
+        strokeWidth="12"
+        strokeLinejoin="bevel"
+        strokeLinecap="square"
+        fill="none"
+        transform="translate(3 3)"
+      />
+      <path
+        d="M30 12 L52 34 L40 48"
+        stroke="rgba(0,0,0,0.14)"
+        strokeWidth="12"
+        strokeLinejoin="bevel"
+        strokeLinecap="square"
+        fill="none"
+        transform="translate(3 3)"
+      />
+      <path
+        d="M10 30 L30 50 L52 28"
+        stroke="#d10087"
+        strokeWidth="12"
+        strokeLinejoin="bevel"
+        strokeLinecap="square"
+        fill="none"
+      />
+      <path
+        d="M30 12 L52 34 L40 48"
+        stroke="#1d4ed8"
+        strokeWidth="12"
+        strokeLinejoin="bevel"
+        strokeLinecap="square"
+        fill="none"
+      />
+    </svg>
+  )
+}
+
 export function AppLayout() {
   const navigate = useNavigate()
   const queryClient = useQueryClient()
@@ -83,6 +124,7 @@ export function AppLayout() {
   const [d365ModalOpen, setD365ModalOpen] = useState(false)
   const [globalQuery, setGlobalQuery] = useState('')
   const [searchOpen, setSearchOpen] = useState(false)
+  const trimmedQuery = globalQuery.trim()
 
   const { data: cases = [] } = useQuery({ queryKey: ['agenticCases'], queryFn: getAgenticCases })
   const { data: dispatchInvoices = [] } = useQuery({ queryKey: ['dispatchInvoices'], queryFn: getDispatchInvoices })
@@ -96,15 +138,15 @@ export function AppLayout() {
     return () => window.clearInterval(id)
   }, [])
 
-  const refresh = useCallback(async () => {
+  const refresh = useCallback(async ({ silent }: { silent?: boolean } = {}) => {
     refreshNow()
     await queryClient.invalidateQueries()
-    toast.success('Refreshed')
+    if (!silent) toast.success('Refreshed')
   }, [queryClient, refreshNow])
 
   useEffect(() => {
     if (!autoRefreshEnabled) return
-    const id = window.setInterval(() => void refresh(), autoRefreshIntervalMs)
+    const id = window.setInterval(() => void refresh({ silent: true }), autoRefreshIntervalMs)
     return () => window.clearInterval(id)
   }, [autoRefreshEnabled, autoRefreshIntervalMs, refresh])
 
@@ -207,7 +249,7 @@ export function AppLayout() {
           <div className={cn('flex items-center justify-between gap-2 px-2', sidebarCollapsed && 'justify-center')}>
             {!sidebarCollapsed ? (
               <div className="flex items-center gap-2">
-                <div className="h-7 w-7 rotate-45 rounded-[6px] bg-gradient-to-br from-qa-primary to-qa-secondary" />
+                <SiteLogo className="h-7 w-7" />
                 <div>
                   <div className="text-sm font-semibold text-slate-900 dark:text-slate-50">QAgent AR Solution</div>
                 </div>
@@ -267,7 +309,7 @@ export function AppLayout() {
                 onBlur={() => window.setTimeout(() => setSearchOpen(false), 120)}
                 onKeyDown={(e) => {
                   if (e.key !== 'Enter') return
-                  if (!globalQuery.trim()) {
+                  if (!trimmedQuery) {
                     toast.message('Search', { description: 'Enter a query to search' })
                     return
                   }
@@ -275,54 +317,72 @@ export function AppLayout() {
                     openHit(searchHits[0])
                     return
                   }
-                  if (searchHits.length) {
-                    navigate(`/pipeline?q=${encodeURIComponent(globalQuery.trim())}`)
-                    setSearchOpen(false)
-                    return
-                  }
-                  setSearchOpen(true)
+                  navigate(`/pipeline?q=${encodeURIComponent(trimmedQuery)}`)
+                  setSearchOpen(false)
                 }}
               />
 
-              {searchOpen && searchHits.length ? (
+              {searchOpen && trimmedQuery ? (
                 <div className="absolute left-0 right-0 top-full z-30 mt-2 overflow-hidden rounded-2xl bg-white shadow-card ring-1 ring-slate-200/60 dark:bg-slate-950 dark:ring-slate-800/70">
                   <div className="border-b border-slate-200/60 px-4 py-3 text-xs font-semibold uppercase tracking-wide text-slate-400 dark:border-slate-800/70">
                     Results
                   </div>
-                  <div className="max-h-[360px] overflow-y-auto p-2">
-                    {searchHits.map((h) => {
-                      const Icon =
-                        h.kind === 'IRN'
-                          ? Receipt
-                          : h.kind === 'Invoice'
+                  {searchHits.length ? (
+                    <div className="max-h-[360px] overflow-y-auto p-2">
+                      {searchHits.map((h) => {
+                        const Icon =
+                          h.kind === 'IRN'
                             ? Receipt
-                            : h.kind === 'SO'
-                              ? Wallet
-                              : h.kind === 'Customer'
-                                ? HandCoins
-                                : FileText
-                      return (
-                        <button
-                          key={h.key}
-                          type="button"
-                          onMouseDown={(e) => e.preventDefault()}
-                          onClick={() => openHit(h)}
-                          className="flex w-full items-start gap-3 rounded-xl px-3 py-3 text-left transition-colors hover:bg-slate-50 dark:hover:bg-slate-900"
-                        >
-                          <div className="grid h-9 w-9 place-items-center rounded-xl bg-qa-primary/10 text-qa-primary dark:bg-qa-primary/15">
-                            <Icon className="h-4 w-4" />
-                          </div>
-                          <div className="min-w-0 flex-1">
-                            <div className="flex items-start justify-between gap-3">
-                              <div className="truncate text-sm font-semibold text-slate-900 dark:text-slate-50">{h.title}</div>
-                              <Badge variant="neutral">{h.kind}</Badge>
+                            : h.kind === 'Invoice'
+                              ? Receipt
+                              : h.kind === 'SO'
+                                ? Wallet
+                                : h.kind === 'Customer'
+                                  ? HandCoins
+                                  : FileText
+                        return (
+                          <button
+                            key={h.key}
+                            type="button"
+                            onMouseDown={(e) => e.preventDefault()}
+                            onClick={() => openHit(h)}
+                            className="flex w-full items-start gap-3 rounded-xl px-3 py-3 text-left transition-colors hover:bg-slate-50 dark:hover:bg-slate-900"
+                          >
+                            <div className="grid h-9 w-9 place-items-center rounded-xl bg-qa-primary/10 text-qa-primary dark:bg-qa-primary/15">
+                              <Icon className="h-4 w-4" />
                             </div>
-                            <div className="mt-1 truncate text-sm text-slate-600 dark:text-slate-400">{h.subtitle}</div>
-                          </div>
-                        </button>
-                      )
-                    })}
-                  </div>
+                            <div className="min-w-0 flex-1">
+                              <div className="flex items-start justify-between gap-3">
+                                <div className="truncate text-sm font-semibold text-slate-900 dark:text-slate-50">{h.title}</div>
+                                <Badge variant="neutral">{h.kind}</Badge>
+                              </div>
+                              <div className="mt-1 truncate text-sm text-slate-600 dark:text-slate-400">{h.subtitle}</div>
+                            </div>
+                          </button>
+                        )
+                      })}
+                    </div>
+                  ) : (
+                    <div className="p-4">
+                      <div className="text-sm font-semibold text-slate-900 dark:text-slate-50">No results</div>
+                      <div className="mt-1 text-sm text-slate-600 dark:text-slate-400">
+                        Try a different query, or view the pipeline search.
+                      </div>
+                      <div className="mt-3">
+                        <Button
+                          variant="secondary"
+                          size="sm"
+                          onMouseDown={(e) => e.preventDefault()}
+                          onClick={() => {
+                            navigate(`/pipeline?q=${encodeURIComponent(trimmedQuery)}`)
+                            setSearchOpen(false)
+                          }}
+                        >
+                          View in Pipeline
+                        </Button>
+                      </div>
+                    </div>
+                  )}
                 </div>
               ) : null}
             </div>
@@ -460,7 +520,7 @@ export function AppLayout() {
                     variant="secondary"
                     size="sm"
                     onClick={() => {
-                      void refresh()
+                      void refresh({ silent: true })
                       toast.success('Sync requested')
                     }}
                   >

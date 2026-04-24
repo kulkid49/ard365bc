@@ -4,7 +4,7 @@ import { ExternalLink, Search, Send, Sparkles } from 'lucide-react'
 import { useSearchParams } from 'react-router-dom'
 import { toast } from 'sonner'
 
-import { getAgenticCases } from '@/api/mockApi'
+import { getAgenticCases, getDispatchInvoices } from '@/api/mockApi'
 import { PageHeader } from '@/components/common/PageHeader'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
@@ -30,6 +30,7 @@ function statusVariant(status: AgenticCase['status']): React.ComponentProps<type
 export default function CasesInboxPage() {
   const [searchParams] = useSearchParams()
   const { data: cases = [] } = useQuery({ queryKey: ['agenticCases'], queryFn: getAgenticCases })
+  const { data: dispatchInvoices = [] } = useQuery({ queryKey: ['dispatchInvoices'], queryFn: getDispatchInvoices })
   const [q, setQ] = useState(() => searchParams.get('q') ?? '')
   const [selectedId, setSelectedId] = useState<string>(() => cases[0]?.caseId ?? '')
 
@@ -41,8 +42,21 @@ export default function CasesInboxPage() {
   const filtered = useMemo(() => {
     const query = q.trim().toLowerCase()
     if (!query) return inbox
-    return inbox.filter((c) => c.caseId.toLowerCase().includes(query) || c.customerName.toLowerCase().includes(query))
-  }, [inbox, q])
+    const invoiceOrIrnCaseIds = new Set(
+      dispatchInvoices
+        .filter((i) => (i.irn?.toLowerCase().includes(query) ?? false) || i.d365InvoiceNo.toLowerCase().includes(query))
+        .map((i) => i.caseId),
+    )
+    return inbox.filter((c) => {
+      return (
+        c.caseId.toLowerCase().includes(query) ||
+        c.customerName.toLowerCase().includes(query) ||
+        (c.d365SoNo?.toLowerCase().includes(query) ?? false) ||
+        (c.d365InvoiceNo?.toLowerCase().includes(query) ?? false) ||
+        invoiceOrIrnCaseIds.has(c.caseId)
+      )
+    })
+  }, [dispatchInvoices, inbox, q])
 
   const selected = useMemo(() => filtered.find((c) => c.caseId === selectedId) ?? filtered[0], [filtered, selectedId])
 
@@ -65,7 +79,7 @@ export default function CasesInboxPage() {
               <CardTitle>Inbox</CardTitle>
               <div className="relative w-[360px] max-w-[90vw]">
                 <Search className="pointer-events-none absolute left-3 top-3 h-4 w-4 text-slate-400" />
-                <Input value={q} onChange={(e) => setQ(e.target.value)} className="pl-9" placeholder="Search Case ID, Customer…" />
+                <Input value={q} onChange={(e) => setQ(e.target.value)} className="pl-9" placeholder="Search Case ID, Customer, SO #, Invoice #, IRN…" />
               </div>
             </div>
           </CardHeader>
