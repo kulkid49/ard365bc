@@ -7,9 +7,11 @@ const badgeVariants = cva('inline-flex items-center rounded-full px-2.5 py-0.5 t
   variants: {
     variant: {
       neutral: 'bg-slate-100 text-slate-700 dark:bg-slate-900 dark:text-slate-300',
+      blue: 'bg-qa-primary/15 text-qa-primary dark:bg-qa-primary/20 dark:text-qa-primary',
       teal: 'bg-qa-secondary/15 text-qa-primary dark:bg-qa-secondary/20 dark:text-qa-secondary',
       green: 'bg-emerald-500/15 text-emerald-700 dark:bg-emerald-500/20 dark:text-emerald-300',
       yellow: 'bg-amber-500/15 text-amber-800 dark:bg-amber-500/20 dark:text-amber-300',
+      orange: 'bg-orange-500/15 text-orange-800 dark:bg-orange-500/20 dark:text-orange-300',
       red: 'bg-rose-500/15 text-rose-800 dark:bg-rose-500/20 dark:text-rose-300',
     },
   },

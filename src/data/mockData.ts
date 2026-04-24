@@ -193,6 +193,122 @@ export const purchaseOrders: PurchaseOrder[] = [
   },
 ]
 
+export type PoEmailStatus = 'New' | 'Extracting' | 'Extracted' | 'Needs Review' | 'Failed' | 'Archived'
+
+export type PoIntakeAttachment = {
+  name: string
+  kind: 'pdf' | 'doc' | 'edi'
+}
+
+export type PoIntakeEmail = {
+  id: string
+  senderName: string
+  senderEmail: string
+  subject: string
+  receivedAt: string
+  status: PoEmailStatus
+  flagged: boolean
+  suggestedActionsCount: number
+  poNumber?: string
+  amount?: number
+  currency: 'INR' | 'USD' | 'EUR'
+  purchaseOrderId?: string
+  body: string
+  attachments: PoIntakeAttachment[]
+}
+
+export const poIntakeEmails: PoIntakeEmail[] = [
+  {
+    id: 'mail-9012',
+    senderName: 'Acme Procurement',
+    senderEmail: 'procurement@acmetrading.in',
+    subject: 'PO attached: PO-20260423-4782 | Acme Trading Pvt Ltd',
+    receivedAt: format(addMinutes(now, -3), 'hh:mm a'),
+    status: 'New',
+    flagged: false,
+    suggestedActionsCount: 2,
+    poNumber: 'PO-20260423-4782',
+    amount: 845720,
+    currency: 'INR',
+    purchaseOrderId: 'po-4782',
+    body:
+      'Hello Team,\n\nPlease find attached the Purchase Order PO-20260423-4782 for delivery by ' +
+      format(addDays(now, 18), 'dd MMM yyyy') +
+      '.\n\nTotal amount: INR 845,720.\nShip to: Mumbai DC.\n\nRegards,\nAcme Procurement',
+    attachments: [{ name: 'PO-20260423-4782.pdf', kind: 'pdf' }],
+  },
+  {
+    id: 'mail-9011',
+    senderName: 'Nova Retail',
+    senderEmail: 'orders@novaretail.com',
+    subject: 'New PO – PO-20260422-4811 (Nova Retail)',
+    receivedAt: format(addMinutes(now, -14), 'hh:mm a'),
+    status: 'Extracted',
+    flagged: false,
+    suggestedActionsCount: 1,
+    poNumber: 'PO-20260422-4811',
+    amount: 412350,
+    currency: 'INR',
+    purchaseOrderId: 'po-4811',
+    body:
+      'Hi,\n\nAttached is our PO PO-20260422-4811.\nTotal: INR 412,350.\nRequested delivery: ' +
+      format(addDays(now, 12), 'dd MMM yyyy') +
+      '.\n\nThanks,\nNova Retail',
+    attachments: [
+      { name: 'PO-20260422-4811.pdf', kind: 'pdf' },
+      { name: 'Terms.docx', kind: 'doc' },
+    ],
+  },
+  {
+    id: 'mail-9008',
+    senderName: 'Zenith Distributors',
+    senderEmail: 'buying@zenithdist.in',
+    subject: 'PO request for immediate dispatch',
+    receivedAt: format(addMinutes(now, -28), 'hh:mm a'),
+    status: 'Needs Review',
+    flagged: true,
+    suggestedActionsCount: 3,
+    poNumber: 'PO-20260421-4760',
+    amount: 1269000,
+    currency: 'INR',
+    purchaseOrderId: 'po-4760',
+    body:
+      'Dear Supplier,\n\nPlease process PO-20260421-4760 with priority.\nTotal value: INR 1,269,000.\nWe need delivery by ' +
+      format(addDays(now, 25), 'dd MMM yyyy') +
+      '.\n\nNote: vendor master may be missing.\n\nRegards,\nZenith Distributors',
+    attachments: [{ name: 'PO-20260421-4760.pdf', kind: 'pdf' }],
+  },
+  {
+    id: 'mail-9005',
+    senderName: 'Orbit Manufacturing',
+    senderEmail: 'ap@orbitmfg.com',
+    subject: 'Re: PO submission (format issues)',
+    receivedAt: format(addMinutes(now, -46), 'hh:mm a'),
+    status: 'Failed',
+    flagged: false,
+    suggestedActionsCount: 1,
+    currency: 'INR',
+    body:
+      'Hi,\n\nWe attempted to send the PO but the attachment may be corrupted. Please advise the supported format.\n\nRegards,\nOrbit AP',
+    attachments: [{ name: 'PO_attachment.edi', kind: 'edi' }],
+  },
+  {
+    id: 'mail-9001',
+    senderName: 'Acme Procurement',
+    senderEmail: 'procurement@acmetrading.in',
+    subject: 'Older PO confirmation thread',
+    receivedAt: format(addMinutes(now, -132), 'hh:mm a'),
+    status: 'Archived',
+    flagged: false,
+    suggestedActionsCount: 0,
+    poNumber: 'PO-20260418-4701',
+    amount: 198500,
+    currency: 'INR',
+    body: 'Thanks for confirming the dispatch. Closing this thread.',
+    attachments: [],
+  },
+]
+
 export const customers: Customer[] = [
   {
     id: 'cust-acme',

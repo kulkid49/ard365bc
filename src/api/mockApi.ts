@@ -9,6 +9,7 @@ import {
   lifecycleTrace,
   openArItems,
   payments,
+  poIntakeEmails,
   purchaseOrders,
   salesOrders,
   shipments,
@@ -21,6 +22,11 @@ function sleep(ms: number) {
 export async function getPurchaseOrders() {
   await sleep(180)
   return purchaseOrders
+}
+
+export async function getPoIntakeEmails() {
+  await sleep(180)
+  return poIntakeEmails
 }
 
 export async function getCustomers() {
@@ -78,4 +84,3 @@ export async function getLifecycle(input: string) {
   const key = input in lifecycleByKey ? input : 'SO-20260423-4782'
   return { key, ...lifecycleByKey[key], trace: lifecycleTrace }
 }
-

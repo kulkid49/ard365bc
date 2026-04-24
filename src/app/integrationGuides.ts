@@ -14,9 +14,14 @@ export const integrationGuidesByPath: Record<string, IntegrationGuide> = {
   },
   '/po-intake': {
     title: 'PO Intake & Extraction',
-    entitiesAndTools: ['salesOrders (preview)', 'PO extractor tool', 'Power Automate trigger'],
-    operations: ['Upload document metadata', 'POST structured payload for extraction', 'Handoff to Customer Agent'],
-    uiTriggers: ['Upload New PO', 'Send to Customer Agent', 'Batch Process'],
+    entitiesAndTools: ['incomingEmailMessages', 'attachments (pdf/edi)', 'PO extractor tool', 'Power Automate trigger'],
+    operations: [
+      'Sync inbox + ingest messages',
+      'POST attachment(s) for extraction (OCR/NLP)',
+      'Validate vendor/duplicates/pricing before BC create',
+      'Handoff to Customer/Credit agents when exceptions detected',
+    ],
+    uiTriggers: ['Connect Inbox', 'Sync Now', 'Quick Extract', 'Re-extract', 'Approve & Create PO in BC'],
   },
   '/customer-validation': {
     title: 'Customer Validation & Onboarding',
@@ -101,4 +106,3 @@ export const integrationGuidesByPath: Record<string, IntegrationGuide> = {
 export function getIntegrationGuideForPath(pathname: string): IntegrationGuide {
   return integrationGuidesByPath[pathname] ?? integrationGuidesByPath['/']
 }
-
