@@ -311,7 +311,10 @@ export function AppLayout() {
         </aside>
 
         <div className="flex h-full min-w-0 flex-1 flex-col">
-          <header className="flex h-16 items-center justify-between gap-4 border-b border-slate-200 bg-white px-6 dark:border-slate-900 dark:bg-slate-950">
+          <header
+            data-tour="top-header"
+            className="flex h-16 items-center justify-between gap-4 border-b border-slate-200 bg-white px-6 dark:border-slate-900 dark:bg-slate-950"
+          >
             <div className="relative min-w-0 flex-1 max-w-xl">
               <Search className="pointer-events-none absolute left-3 top-3 h-4 w-4 text-slate-400" />
               <Input
@@ -405,7 +408,8 @@ export function AppLayout() {
               <button
                 type="button"
                 onClick={() => setD365ModalOpen(true)}
-                className="hidden items-center gap-2 rounded-full bg-white px-3 py-2 text-xs font-semibold text-slate-700 shadow-sm ring-1 ring-slate-200/60 transition-colors hover:bg-slate-50 dark:bg-slate-950 dark:text-slate-200 dark:ring-slate-800/70 dark:hover:bg-slate-900 lg:inline-flex"
+                data-tour="d365-pill"
+                className="inline-flex items-center gap-2 rounded-full bg-white px-3 py-2 text-xs font-semibold text-slate-700 shadow-sm ring-1 ring-slate-200/60 transition-colors hover:bg-slate-50 dark:bg-slate-950 dark:text-slate-200 dark:ring-slate-800/70 dark:hover:bg-slate-900"
                 aria-label="D365 BC status"
               >
                 <Badge variant={d365BadgeVariant}>D365 BC</Badge>
@@ -431,6 +435,20 @@ export function AppLayout() {
                   ) : null}
                 </div>
               </Button>
+
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    onClick={() => navigate('/?tour=1')}
+                    aria-label="Restart dashboard tour"
+                  >
+                    <LifeBuoy className="h-4 w-4" />
+                  </Button>
+                </TooltipTrigger>
+                <TooltipContent>Restart tour</TooltipContent>
+              </Tooltip>
 
               <Tooltip>
                 <TooltipTrigger asChild>
@@ -468,7 +486,10 @@ export function AppLayout() {
                 ))}
               </div>
 
-              <div className="flex items-center gap-2 rounded-full bg-white px-3 py-1.5 text-xs font-medium text-slate-600 shadow-sm ring-1 ring-slate-200/60 dark:bg-slate-950 dark:text-slate-300 dark:ring-slate-800/70">
+              <div
+                data-tour="auto-refresh"
+                className="flex items-center gap-2 rounded-full bg-white px-3 py-1.5 text-xs font-medium text-slate-600 shadow-sm ring-1 ring-slate-200/60 dark:bg-slate-950 dark:text-slate-300 dark:ring-slate-800/70"
+              >
                 <span className={cn('h-2 w-2 rounded-full', autoRefreshEnabled ? 'bg-emerald-500' : 'bg-slate-400')} />
                 Auto-refresh {autoRefreshEnabled ? `in ${remainingSec}s` : 'off'}
               </div>

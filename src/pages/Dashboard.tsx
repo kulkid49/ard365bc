@@ -7,6 +7,7 @@ import { toast } from 'sonner'
 
 import { getAgenticCases, getPipelineStageStats, getValueKpis } from '@/api/mockApi'
 import { PageHeader } from '@/components/common/PageHeader'
+import { DashboardTour } from '@/components/common/DashboardTour'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
@@ -65,28 +66,46 @@ export default function DashboardPage() {
   }, [stages])
 
   const pipelineRows = useMemo(() => cases.slice(0, 12), [cases])
+  const sampleCaseId = pipelineRows[0]?.caseId ?? ''
 
   return (
     <div className="space-y-6">
-      <PageHeader
-        title="Dashboard"
-        subtitle="Real-time executive + operational cockpit for Agentic AR"
-        actions={[
-          { label: 'Upload New Document', variant: 'primary', onClick: () => toast.success('Upload flow opens here') },
-          { label: 'Manual Case Trigger', variant: 'secondary', onClick: () => toast.message('Manual trigger queued') },
-          { label: 'Reprocess Failed Cases', variant: 'secondary', onClick: () => toast.message('Reprocess queued') },
-        ]}
-        rightSlot={
-          <Button variant="ghost" onClick={() => toast.success('Synced')} aria-label="Sync now">
-            <RefreshCcw className="mr-2 h-4 w-4" />
-            Sync
-          </Button>
-        }
-      />
+      <div data-tour="dashboard-actions">
+        <PageHeader
+          title="Dashboard"
+          subtitle="Real-time executive + operational cockpit for Agentic AR"
+          actions={[
+            { label: 'Upload New Document', variant: 'primary', onClick: () => toast.success('Upload flow opens here') },
+            { label: 'Manual Case Trigger', variant: 'secondary', onClick: () => toast.message('Manual trigger queued') },
+            { label: 'Reprocess Failed Cases', variant: 'secondary', onClick: () => toast.message('Reprocess queued') },
+          ]}
+          rightSlot={
+            <Button variant="ghost" onClick={() => toast.success('Synced')} aria-label="Sync now">
+              <RefreshCcw className="mr-2 h-4 w-4" />
+              Sync
+            </Button>
+          }
+        />
+      </div>
 
-      <div className="grid grid-cols-1 gap-4 lg:grid-cols-4">
+      <div data-tour="kpi-row" className="grid grid-cols-1 gap-4 lg:grid-cols-4">
         {kpiCards.map((c) => (
-          <Card key={c.label}>
+          <Card
+            key={c.label}
+            data-tour={
+              c.label === 'Automation Rate'
+                ? 'kpi-automation'
+                : c.label === 'Avg Cycle Time'
+                  ? 'kpi-cycle'
+                  : c.label === 'FTE Saved (Today)'
+                    ? 'kpi-fte'
+                    : c.label === 'Error Rate'
+                      ? 'kpi-error'
+                      : c.label === 'Cash Flow Accel.'
+                        ? 'kpi-cashflow'
+                        : undefined
+            }
+          >
             <CardHeader>
               <div className="flex items-start justify-between gap-3">
                 <div>
@@ -101,7 +120,7 @@ export default function DashboardPage() {
         ))}
       </div>
 
-      <Card>
+      <Card data-tour="funnel">
         <CardHeader>
           <div className="flex flex-wrap items-start justify-between gap-3">
             <div>
@@ -134,7 +153,7 @@ export default function DashboardPage() {
       </Card>
 
       <div className="grid grid-cols-1 gap-4 xl:grid-cols-12">
-        <Card className="xl:col-span-8">
+        <Card data-tour="pipeline-table" className="xl:col-span-8">
           <CardHeader>
             <div className="flex flex-wrap items-center justify-between gap-3">
               <div>
@@ -172,7 +191,7 @@ export default function DashboardPage() {
               </TableHeader>
               <TableBody>
                 {pipelineRows.map((r) => (
-                  <TableRow key={r.caseId}>
+                  <TableRow key={r.caseId} data-tour={r.caseId === sampleCaseId ? 'pipeline-sample-row' : undefined}>
                     <TableCell className="font-semibold">
                       <Link className="text-qa-primary underline-offset-2 hover:underline" to={`/cases/${r.caseId}`}>
                         {r.caseId}
@@ -218,7 +237,7 @@ export default function DashboardPage() {
         </Card>
 
         <div className="grid gap-4 xl:col-span-4">
-          <Card>
+          <Card data-tour="critical-alerts">
             <CardHeader>
               <CardTitle>Critical Alerts</CardTitle>
             </CardHeader>
@@ -246,13 +265,25 @@ export default function DashboardPage() {
             </CardContent>
           </Card>
 
-          <Card>
+          <Card data-tour="agent-health">
             <CardHeader>
               <CardTitle>Agent Health</CardTitle>
             </CardHeader>
             <CardContent className="grid grid-cols-1 gap-3">
               {agents.map((a) => (
-                <div key={a.id} className="rounded-xl bg-white p-3 ring-1 ring-slate-200/60 dark:bg-slate-950 dark:ring-slate-800/70">
+                <div
+                  key={a.id}
+                  data-tour={
+                    a.name === 'Contract Intelligence'
+                      ? 'agent-contract-intel'
+                      : a.name === 'Billing Agent'
+                        ? 'agent-billing'
+                        : a.name === 'E-Invoice & Dispatch'
+                          ? 'agent-einvoice'
+                          : undefined
+                  }
+                  className="rounded-xl bg-white p-3 ring-1 ring-slate-200/60 dark:bg-slate-950 dark:ring-slate-800/70"
+                >
                   <div className="flex items-start justify-between gap-3">
                     <div className="min-w-0">
                       <div className="truncate text-sm font-semibold text-slate-900 dark:text-slate-50">{a.name}</div>
@@ -309,6 +340,8 @@ export default function DashboardPage() {
           </Card>
         </div>
       </div>
+
+      <DashboardTour />
     </div>
   )
 }
