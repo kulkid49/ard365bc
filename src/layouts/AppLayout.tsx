@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useMemo, useState } from 'react'
-import { NavLink, Outlet } from 'react-router-dom'
+import { NavLink, Outlet, useNavigate } from 'react-router-dom'
 import { useQueryClient } from '@tanstack/react-query'
+import { useQuery } from '@tanstack/react-query'
 import {
   Activity,
   BarChart3,
@@ -15,6 +16,7 @@ import {
   LayoutDashboard,
   LifeBuoy,
   Moon,
+  Receipt,
   RefreshCcw,
   Search,
   Settings,
@@ -24,6 +26,7 @@ import {
 } from 'lucide-react'
 import { toast } from 'sonner'
 
+import { getAgenticCases, getDispatchInvoices } from '@/api/mockApi'
 import { applyThemeMode } from '@/app/theme'
 import { useAppStore } from '@/app/store'
 import { IntegrationGuidePanel } from '@/components/common/IntegrationGuidePanel'
@@ -59,6 +62,7 @@ function statusDotClass(status: 'healthy' | 'warning' | 'down') {
 }
 
 export function AppLayout() {
+  const navigate = useNavigate()
   const queryClient = useQueryClient()
   const theme = useAppStore((s) => s.theme)
   const toggleTheme = useAppStore((s) => s.toggleTheme)
@@ -78,6 +82,10 @@ export function AppLayout() {
   const [guideOpen, setGuideOpen] = useState(false)
   const [d365ModalOpen, setD365ModalOpen] = useState(false)
   const [globalQuery, setGlobalQuery] = useState('')
+  const [searchOpen, setSearchOpen] = useState(false)
+
+  const { data: cases = [] } = useQuery({ queryKey: ['agenticCases'], queryFn: getAgenticCases })
+  const { data: dispatchInvoices = [] } = useQuery({ queryKey: ['dispatchInvoices'], queryFn: getDispatchInvoices })
 
   useEffect(() => {
     applyThemeMode(theme)
@@ -119,6 +127,73 @@ export function AppLayout() {
 
   const d365BadgeVariant: React.ComponentProps<typeof Badge>['variant'] =
     d365.state === 'connected' ? 'green' : d365.state === 'degraded' ? 'yellow' : 'red'
+
+  type SearchHit = {
+    key: string
+    kind: 'Case' | 'Customer' | 'SO' | 'Invoice' | 'IRN'
+    title: string
+    subtitle: string
+    caseId?: string
+  }
+
+  const searchHits = useMemo<SearchHit[]>(() => {
+    const q = globalQuery.trim().toLowerCase()
+    if (!q) return []
+
+    const hits: SearchHit[] = []
+
+    const caseMatches = cases.filter((c) => {
+      return (
+        c.caseId.toLowerCase().includes(q) ||
+        c.customerName.toLowerCase().includes(q) ||
+        (c.d365SoNo?.toLowerCase().includes(q) ?? false) ||
+        (c.d365InvoiceNo?.toLowerCase().includes(q) ?? false)
+      )
+    })
+
+    for (const c of caseMatches.slice(0, 10)) {
+      const kind: SearchHit['kind'] = c.caseId.toLowerCase().includes(q) ? 'Case' : c.customerName.toLowerCase().includes(q) ? 'Customer' : c.d365SoNo?.toLowerCase().includes(q) ? 'SO' : 'Invoice'
+      hits.push({
+        key: `case:${c.caseId}:${kind}`,
+        kind,
+        title:
+          kind === 'Customer'
+            ? c.customerName
+            : kind === 'SO'
+              ? c.d365SoNo ?? c.caseId
+              : kind === 'Invoice'
+                ? c.d365InvoiceNo ?? c.caseId
+                : c.caseId,
+        subtitle: `${c.caseId} • ${c.customerName} • ${c.currentStage}`,
+        caseId: c.caseId,
+      })
+    }
+
+    const irnMatches = dispatchInvoices
+      .filter((i) => (i.irn?.toLowerCase().includes(q) ?? false))
+      .slice(0, 6)
+      .map((i) => ({
+        key: `irn:${i.irn}:${i.caseId}`,
+        kind: 'IRN' as const,
+        title: i.irn ?? 'IRN',
+        subtitle: `${i.caseId} • ${i.d365InvoiceNo} • ${i.customerName}`,
+        caseId: i.caseId,
+      }))
+
+    for (const m of irnMatches) hits.unshift(m)
+
+    const uniq = new Map<string, SearchHit>()
+    for (const h of hits) if (!uniq.has(h.key)) uniq.set(h.key, h)
+    return Array.from(uniq.values()).slice(0, 8)
+  }, [cases, dispatchInvoices, globalQuery])
+
+  const openHit = useCallback(
+    (hit: SearchHit) => {
+      if (hit.caseId) navigate(`/cases/${hit.caseId}`)
+      setSearchOpen(false)
+    },
+    [navigate],
+  )
 
   return (
     <TooltipProvider>
@@ -188,11 +263,63 @@ export function AppLayout() {
                 onChange={(e) => setGlobalQuery(e.target.value)}
                 className="pl-9"
                 placeholder="Search by Case ID, Customer, SO #, Invoice #, IRN…"
+                onFocus={() => setSearchOpen(true)}
+                onBlur={() => window.setTimeout(() => setSearchOpen(false), 120)}
                 onKeyDown={(e) => {
                   if (e.key !== 'Enter') return
-                  toast.message('Search', { description: globalQuery ? `Query: ${globalQuery}` : 'Enter a query to search' })
+                  if (!globalQuery.trim()) {
+                    toast.message('Search', { description: 'Enter a query to search' })
+                    return
+                  }
+                  if (searchHits.length === 1) {
+                    openHit(searchHits[0])
+                    return
+                  }
+                  setSearchOpen(true)
                 }}
               />
+
+              {searchOpen && searchHits.length ? (
+                <div className="absolute left-0 right-0 top-full z-30 mt-2 overflow-hidden rounded-2xl bg-white shadow-card ring-1 ring-slate-200/60 dark:bg-slate-950 dark:ring-slate-800/70">
+                  <div className="border-b border-slate-200/60 px-4 py-3 text-xs font-semibold uppercase tracking-wide text-slate-400 dark:border-slate-800/70">
+                    Results
+                  </div>
+                  <div className="max-h-[360px] overflow-y-auto p-2">
+                    {searchHits.map((h) => {
+                      const Icon =
+                        h.kind === 'IRN'
+                          ? Receipt
+                          : h.kind === 'Invoice'
+                            ? Receipt
+                            : h.kind === 'SO'
+                              ? Wallet
+                              : h.kind === 'Customer'
+                                ? HandCoins
+                                : FileText
+                      return (
+                        <button
+                          key={h.key}
+                          type="button"
+                          onMouseDown={(e) => e.preventDefault()}
+                          onClick={() => openHit(h)}
+                          className="flex w-full items-start gap-3 rounded-xl px-3 py-3 text-left transition-colors hover:bg-slate-50 dark:hover:bg-slate-900"
+                        >
+                          <div className="grid h-9 w-9 place-items-center rounded-xl bg-qa-primary/10 text-qa-primary dark:bg-qa-primary/15">
+                            <Icon className="h-4 w-4" />
+                          </div>
+                          <div className="min-w-0 flex-1">
+                            <div className="flex items-start justify-between gap-3">
+                              <div className="truncate text-sm font-semibold text-slate-900 dark:text-slate-50">{h.title}</div>
+                              <Badge variant="neutral">{h.kind}</Badge>
+                            </div>
+                            <div className="mt-1 truncate text-sm text-slate-600 dark:text-slate-400">{h.subtitle}</div>
+                          </div>
+                        </button>
+                      )
+                    })}
+                  </div>
+                </div>
+              ) : null}
             </div>
 
             <div className="flex items-center gap-2">
