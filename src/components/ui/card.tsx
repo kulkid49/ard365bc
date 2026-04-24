@@ -27,5 +27,5 @@ export function CardDescription({ className, ...props }: React.HTMLAttributes<HT
 }
 
 export function CardContent({ className, ...props }: React.HTMLAttributes<HTMLDivElement>) {
-  return <div className={cn('px-5 pb-5', className)} {...props} />
+  return <div className={cn('min-w-0 overflow-x-auto px-5 pb-5', className)} {...props} />
 }

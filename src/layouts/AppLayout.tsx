@@ -7,6 +7,7 @@ import {
   Bot,
   ChevronLeft,
   ChevronRight,
+  Code2,
   CreditCard,
   FileText,
   HandCoins,
@@ -23,31 +24,13 @@ import { toast } from 'sonner'
 
 import { applyThemeMode } from '@/app/theme'
 import { useAppStore } from '@/app/store'
+import { IntegrationGuidePanel } from '@/components/common/IntegrationGuidePanel'
 import { Avatar, AvatarFallback } from '@/components/ui/avatar'
 import { Button } from '@/components/ui/button'
 import { cn } from '@/lib/utils'
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip'
 
-type NavItem = { label: string; to: string }
 type SideItem = { label: string; to: string; icon: React.ComponentType<{ className?: string }> }
-
-const topTabs: NavItem[] = [
-  { label: 'Dashboard', to: '/' },
-  { label: 'POs', to: '/po-intake' },
-  { label: 'Customer Validation', to: '/customer-validation' },
-  { label: 'Credit Assessment', to: '/credit-assessment' },
-  { label: 'Sales Orders', to: '/sales-orders' },
-  { label: 'Fulfilment', to: '/fulfilment' },
-  { label: 'Invoices', to: '/intelligent-billing' },
-  { label: 'AR Monitoring', to: '/ar-monitoring' },
-  { label: 'Cash Application', to: '/cash-application' },
-  { label: 'Disputes', to: '/disputes' },
-  { label: 'Collections', to: '/collections' },
-  { label: 'Lifecycle Tracker', to: '/lifecycle-tracker' },
-  { label: 'Agents Console', to: '/agents-console' },
-  { label: 'Analytics', to: '/analytics' },
-  { label: 'Settings', to: '/settings' },
-]
 
 const sidebarItems: SideItem[] = [
   { label: 'Dashboard', to: '/', icon: LayoutDashboard },
@@ -87,6 +70,7 @@ export function AppLayout() {
   const autoRefreshIntervalMs = useAppStore((s) => s.autoRefreshIntervalMs)
 
   const [now, setNow] = useState(() => Date.now())
+  const [guideOpen, setGuideOpen] = useState(false)
 
   useEffect(() => {
     applyThemeMode(theme)
@@ -111,14 +95,6 @@ export function AppLayout() {
 
   const remainingMs = autoRefreshEnabled ? Math.max(0, autoRefreshIntervalMs - (now - lastRefreshedAt)) : 0
   const remainingSec = Math.ceil(remainingMs / 1000)
-
-  const tabClass = ({ isActive }: { isActive: boolean }) =>
-    cn(
-      'rounded-full px-4 py-2 text-sm font-medium transition-colors',
-      isActive
-        ? 'bg-white text-slate-900 shadow-sm ring-1 ring-slate-200/60 dark:bg-slate-950 dark:text-slate-50 dark:ring-slate-800/70'
-        : 'text-slate-600 hover:text-slate-900 dark:text-slate-400 dark:hover:text-slate-200',
-    )
 
   const sideLinkClass = ({ isActive }: { isActive: boolean }) =>
     cn(
@@ -201,19 +177,15 @@ export function AppLayout() {
               </div>
             </div>
 
-            <div className="min-w-0 flex-1 px-4">
-              <div className="mx-auto flex w-full max-w-5xl items-center justify-center">
-                <div className="no-scrollbar flex w-full max-w-5xl items-center gap-1 overflow-x-auto rounded-full bg-slate-100 p-1 dark:bg-slate-900">
-                  {topTabs.map((tab) => (
-                    <NavLink key={tab.to} to={tab.to} className={tabClass} end={tab.to === '/'}>
-                      {tab.label}
-                    </NavLink>
-                  ))}
-                </div>
-              </div>
-            </div>
-
             <div className="flex items-center gap-2">
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <Button variant="ghost" size="icon" onClick={() => setGuideOpen(true)} aria-label="Open integration guide">
+                    <Code2 className="h-4 w-4" />
+                  </Button>
+                </TooltipTrigger>
+                <TooltipContent>Integration guide</TooltipContent>
+              </Tooltip>
               <Button variant="ghost" size="icon" onClick={toggleTheme} aria-label="Toggle theme">
                 {theme === 'dark' ? <Moon className="h-4 w-4" /> : <Sun className="h-4 w-4" />}
               </Button>
@@ -259,6 +231,8 @@ export function AppLayout() {
               <Bot className="h-6 w-6" />
             </button>
           </main>
+
+          <IntegrationGuidePanel open={guideOpen} onOpenChange={setGuideOpen} />
         </div>
       </div>
     </TooltipProvider>
