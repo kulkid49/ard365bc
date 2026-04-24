@@ -156,7 +156,7 @@ export default function PoIntakeExtractionPage() {
   const allFilteredSelected = useMemo(() => filtered.length > 0 && filtered.every((m) => selectedIds[m.id]), [filtered, selectedIds])
 
   const toggleSelectAllFiltered = () => {
-    setSelectedIds((prev) => {
+    setSelectedIds(() => {
       if (allFilteredSelected) return {}
       const next: Record<string, true> = {}
       for (const m of filtered) next[m.id] = true
@@ -448,54 +448,67 @@ export default function PoIntakeExtractionPage() {
             </div>
 
             <div className="divide-y divide-slate-200/60 overflow-hidden rounded-xl bg-white ring-1 ring-slate-200/60 dark:divide-slate-800/70 dark:bg-slate-950 dark:ring-slate-800/70">
-              {(emailsLoading ? Array.from({ length: 6 }).map((_, i) => ({ id: `s-${i}` } as const)) : filtered).map((m) => {
-                const isSelected = !!selectedIds[m.id]
-                const isActive = selectedEmail?.id === m.id
-                const status = emailsLoading ? 'Extracting' : (m.status as PoEmailStatus)
-                const amountText = !emailsLoading && m.amount != null ? formatCurrency(m.amount, m.currency) : ''
-                return (
-                  <button
-                    key={m.id}
-                    type="button"
-                    onClick={() => !emailsLoading && setSelectedEmailId(m.id)}
-                    className={cn(
-                      'group relative flex w-full items-start gap-3 px-3 py-3 text-left transition-colors hover:bg-slate-50 dark:hover:bg-slate-900',
-                      isActive && 'bg-qa-secondary/5 dark:bg-qa-secondary/10',
-                    )}
-                  >
-                    <div className="pt-0.5">
-                      <input
-                        type="checkbox"
-                        checked={isSelected}
-                        onChange={(e) => {
-                          e.stopPropagation()
-                          toggleSelectOne(m.id)
-                        }}
-                        onClick={(e) => e.stopPropagation()}
-                      />
-                    </div>
-                    <div className="min-w-0 flex-1">
-                      <div className="flex items-start justify-between gap-3">
-                        <div className="min-w-0">
-                          <div className="truncate text-sm font-semibold text-slate-900 dark:text-slate-50">
-                            {emailsLoading ? 'Loading sender…' : m.senderName}
-                          </div>
-                          <div className="mt-0.5 truncate text-sm text-slate-600 dark:text-slate-400">
-                            {emailsLoading ? 'Loading subject…' : m.subject}
-                          </div>
+              {emailsLoading ? (
+                <div className="space-y-0">
+                  {Array.from({ length: 6 }).map((_, i) => (
+                    <div key={i} className="flex items-start gap-3 px-3 py-3">
+                      <div className="mt-1 h-4 w-4 rounded bg-slate-100 dark:bg-slate-900" />
+                      <div className="min-w-0 flex-1 space-y-2">
+                        <div className="h-4 w-40 rounded bg-slate-100 dark:bg-slate-900" />
+                        <div className="h-4 w-64 rounded bg-slate-100 dark:bg-slate-900" />
+                        <div className="flex gap-2">
+                          <div className="h-5 w-28 rounded-full bg-slate-100 dark:bg-slate-900" />
+                          <div className="h-5 w-20 rounded-full bg-slate-100 dark:bg-slate-900" />
+                          <div className="h-5 w-24 rounded-full bg-slate-100 dark:bg-slate-900" />
                         </div>
-                        <div className="text-xs font-medium text-slate-500 dark:text-slate-400">{emailsLoading ? '--' : m.receivedAt}</div>
                       </div>
-
-                      <div className="mt-2 flex flex-wrap items-center gap-2">
-                        {!emailsLoading && m.poNumber ? <Badge variant="neutral">{m.poNumber}</Badge> : null}
-                        {!emailsLoading && amountText ? <Badge variant="neutral">{amountText}</Badge> : null}
-                        <Badge variant={statusBadgeVariant(status)}>{status}</Badge>
-                        {!emailsLoading && m.flagged ? <Badge variant="orange">Flagged</Badge> : null}
-                      </div>
+                      <div className="h-3 w-10 rounded bg-slate-100 dark:bg-slate-900" />
                     </div>
+                  ))}
+                </div>
+              ) : (
+                filtered.map((m) => {
+                  const isSelected = !!selectedIds[m.id]
+                  const isActive = selectedEmail?.id === m.id
+                  const amountText = m.amount != null ? formatCurrency(m.amount, m.currency) : ''
+                  return (
+                    <button
+                      key={m.id}
+                      type="button"
+                      onClick={() => setSelectedEmailId(m.id)}
+                      className={cn(
+                        'group relative flex w-full items-start gap-3 px-3 py-3 text-left transition-colors hover:bg-slate-50 dark:hover:bg-slate-900',
+                        isActive && 'bg-qa-secondary/5 dark:bg-qa-secondary/10',
+                      )}
+                    >
+                      <div className="pt-0.5">
+                        <input
+                          type="checkbox"
+                          checked={isSelected}
+                          onChange={(e) => {
+                            e.stopPropagation()
+                            toggleSelectOne(m.id)
+                          }}
+                          onClick={(e) => e.stopPropagation()}
+                        />
+                      </div>
+                      <div className="min-w-0 flex-1">
+                        <div className="flex items-start justify-between gap-3">
+                          <div className="min-w-0">
+                            <div className="truncate text-sm font-semibold text-slate-900 dark:text-slate-50">{m.senderName}</div>
+                            <div className="mt-0.5 truncate text-sm text-slate-600 dark:text-slate-400">{m.subject}</div>
+                          </div>
+                          <div className="text-xs font-medium text-slate-500 dark:text-slate-400">{m.receivedAt}</div>
+                        </div>
 
-                    {!emailsLoading ? (
+                        <div className="mt-2 flex flex-wrap items-center gap-2">
+                          {m.poNumber ? <Badge variant="neutral">{m.poNumber}</Badge> : null}
+                          {amountText ? <Badge variant="neutral">{amountText}</Badge> : null}
+                          <Badge variant={statusBadgeVariant(m.status)}>{m.status}</Badge>
+                          {m.flagged ? <Badge variant="orange">Flagged</Badge> : null}
+                        </div>
+                      </div>
+
                       <div className="absolute right-2 top-3 hidden items-center gap-1 group-hover:flex">
                         <Button
                           variant="ghost"
@@ -532,10 +545,10 @@ export default function PoIntakeExtractionPage() {
                           <Archive className="h-4 w-4" />
                         </Button>
                       </div>
-                    ) : null}
-                  </button>
-                )
-              })}
+                    </button>
+                  )
+                })
+              )}
             </div>
           </CardContent>
         </Card>
