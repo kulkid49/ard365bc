@@ -62,8 +62,22 @@ function statusDotClass(status: 'healthy' | 'warning' | 'down') {
 }
 
 function SiteLogo({ className }: { className?: string }) {
+  const [useImg, setUseImg] = useState(true)
+
+  if (useImg) {
+    return (
+      <img
+        src="/project-logo-D_xHJUWf.png"
+        alt="QAgent AR Solution"
+        className={className}
+        onError={() => setUseImg(false)}
+        draggable={false}
+      />
+    )
+  }
+
   return (
-    <svg viewBox="0 0 64 64" className={className} aria-hidden="true" focusable="false">
+    <svg viewBox="0 0 64 64" className={className} role="img" aria-label="QAgent AR Solution">
       <path
         d="M10 30 L30 50 L52 28"
         stroke="rgba(0,0,0,0.14)"
@@ -290,7 +304,7 @@ export function AppLayout() {
               </div>
             ) : (
               <div className="grid place-items-center">
-                <div className="h-2 w-2 rounded-full bg-qa-secondary" />
+                <SiteLogo className="h-7 w-7" />
               </div>
             )}
           </div>
