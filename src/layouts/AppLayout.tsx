@@ -134,8 +134,7 @@ export function AppLayout() {
               <div className="flex items-center gap-2">
                 <div className="h-7 w-7 rotate-45 rounded-[6px] bg-gradient-to-br from-qa-primary to-qa-secondary" />
                 <div>
-                  <div className="text-sm font-semibold text-slate-900 dark:text-slate-50">Agentic AR</div>
-                  <div className="text-xs font-medium text-slate-500 dark:text-slate-400">TO-BE Accounts Receivable</div>
+                  <div className="text-sm font-semibold text-slate-900 dark:text-slate-50">QAgent AR Solution</div>
                 </div>
               </div>
             ) : null}
@@ -182,15 +181,7 @@ export function AppLayout() {
 
         <div className="flex h-full min-w-0 flex-1 flex-col">
           <header className="flex h-16 items-center justify-between gap-4 border-b border-slate-200 bg-white px-6 dark:border-slate-900 dark:bg-slate-950">
-            <div className="flex items-center gap-3">
-              <div className="h-7 w-7 rotate-45 rounded-[6px] bg-gradient-to-br from-qa-primary to-qa-secondary" />
-              <div className="leading-tight">
-                <div className="text-sm font-semibold text-slate-900 dark:text-slate-50">Agentic AR</div>
-                <div className="text-xs font-medium text-slate-500 dark:text-slate-400">TO-BE Accounts Receivable</div>
-              </div>
-            </div>
-
-            <div className="relative hidden w-full max-w-xl lg:block">
+            <div className="relative min-w-0 flex-1 max-w-xl">
               <Search className="pointer-events-none absolute left-3 top-3 h-4 w-4 text-slate-400" />
               <Input
                 value={globalQuery}
