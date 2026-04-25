@@ -247,7 +247,7 @@ function statusVariant(s: InboxEmail['status']): React.ComponentProps<typeof Bad
 }
 
 function classificationFor(email: InboxEmail) {
-  const t = email.tags.includes('PO') ? 'PO' : 'SOW'
+  const t = (email.tags.includes('PO') ? 'PO' : 'SOW') as const
   const confidence = t === 'PO' ? 0.93 : 0.94
   return { docType: t, confidence }
 }
