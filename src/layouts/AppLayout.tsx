@@ -454,6 +454,8 @@ export function AppLayout() {
                             ? 'hitl'
                             : pathname.startsWith('/customers')
                               ? 'customers'
+                              : pathname.startsWith('/sales-orders')
+                                ? 'billing'
                           : pathname.startsWith('/cases/') && pathname !== '/cases'
                             ? 'case'
                             : pathname.startsWith('/cases')
