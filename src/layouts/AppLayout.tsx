@@ -460,6 +460,14 @@ export function AppLayout() {
                                   ? 'tax'
                                   : pathname.startsWith('/approvals')
                                     ? 'approvals'
+                                    : pathname.startsWith('/e-invoice-dispatch')
+                                      ? 'dispatch'
+                                      : pathname.startsWith('/audit-compliance')
+                                        ? 'audit'
+                                        : pathname.startsWith('/agent-console')
+                                          ? 'console'
+                                          : pathname.startsWith('/configuration')
+                                            ? 'config'
                                   : pathname.startsWith('/cases/') && pathname !== '/cases'
                                     ? 'case'
                                     : pathname.startsWith('/cases')

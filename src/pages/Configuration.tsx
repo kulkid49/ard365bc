@@ -3,6 +3,7 @@ import { CheckCircle2, Link2, RefreshCcw, Shield, Wrench } from 'lucide-react'
 import { toast } from 'sonner'
 
 import { useAppStore } from '@/app/store'
+import { ConfigurationTour } from '@/components/common/ConfigurationTour'
 import { PageHeader } from '@/components/common/PageHeader'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
@@ -37,47 +38,52 @@ export default function ConfigurationPage() {
 
   return (
     <div className="space-y-6">
-      <PageHeader
-        title="Configuration & Administration"
-        subtitle={`System Settings • Environment: ${env}${dirty ? ' • Unsaved changes' : ''}`}
-        actions={[
-          { label: 'Save All Changes', variant: 'primary', onClick: () => (setDirty(false), toast.success('Configuration applied successfully')) },
-          { label: 'Discard', variant: 'secondary', onClick: () => (setDirty(false), toast.message('Discarded changes')) },
-          { label: 'Export Config', variant: 'secondary', onClick: () => toast.message('Exported config JSON') },
-          { label: 'Import Config', variant: 'secondary', onClick: () => toast.message('Import flow opened') },
-        ]}
-        rightSlot={
-          <div className="flex flex-wrap items-center gap-2">
-            {(['Dev', 'UAT', 'Production'] as const).map((e) => (
-              <button
-                key={e}
-                type="button"
-                onClick={() => setEnv(e)}
-                className={
-                  env === e
-                    ? 'rounded-full bg-white px-4 py-2 text-sm font-medium text-slate-900 shadow-sm ring-1 ring-slate-200/60 dark:bg-slate-950 dark:text-slate-50 dark:ring-slate-800/70'
-                    : 'rounded-full bg-slate-100 px-4 py-2 text-sm font-medium text-slate-600 hover:bg-slate-200 dark:bg-slate-900 dark:text-slate-400 dark:hover:bg-slate-800'
-                }
-              >
-                {e}
-              </button>
-            ))}
-            <Button variant="ghost" onClick={() => toast.success('Refreshed')}>
-              <RefreshCcw className="mr-2 h-4 w-4" />
-              Refresh
-            </Button>
-          </div>
-        }
-      />
+      <div data-tour="config-header">
+        <PageHeader
+          title="Configuration & Administration"
+          subtitle={`System Settings • Environment: ${env}${dirty ? ' • Unsaved changes' : ''}`}
+          actionsDataTour="config-actions"
+          actions={[
+            { label: 'Save All Changes', variant: 'primary', onClick: () => (setDirty(false), toast.success('Configuration applied successfully')) },
+            { label: 'Discard', variant: 'secondary', onClick: () => (setDirty(false), toast.message('Discarded changes')) },
+            { label: 'Export Config', variant: 'secondary', onClick: () => toast.message('Exported config JSON') },
+            { label: 'Import Config', variant: 'secondary', onClick: () => toast.message('Import flow opened') },
+          ]}
+          rightSlot={
+            <div className="flex flex-wrap items-center gap-2">
+              <div data-tour="config-env" className="flex flex-wrap items-center gap-2">
+                {(['Dev', 'UAT', 'Production'] as const).map((e) => (
+                  <button
+                    key={e}
+                    type="button"
+                    onClick={() => setEnv(e)}
+                    className={
+                      env === e
+                        ? 'rounded-full bg-white px-4 py-2 text-sm font-medium text-slate-900 shadow-sm ring-1 ring-slate-200/60 dark:bg-slate-950 dark:text-slate-50 dark:ring-slate-800/70'
+                        : 'rounded-full bg-slate-100 px-4 py-2 text-sm font-medium text-slate-600 hover:bg-slate-200 dark:bg-slate-900 dark:text-slate-400 dark:hover:bg-slate-800'
+                    }
+                  >
+                    {e}
+                  </button>
+                ))}
+              </div>
+              <Button variant="ghost" onClick={() => toast.success('Refreshed')}>
+                <RefreshCcw className="mr-2 h-4 w-4" />
+                Refresh
+              </Button>
+            </div>
+          }
+        />
+      </div>
 
       <div className="grid grid-cols-1 gap-4 xl:grid-cols-12">
-        <Card className="xl:col-span-8">
+        <Card data-tour="config-control-plane" className="xl:col-span-8">
           <CardHeader>
             <CardTitle>Control Plane</CardTitle>
           </CardHeader>
           <CardContent>
             <Tabs value={tab} onValueChange={(v) => setTab(v as typeof tab)}>
-              <TabsList>
+              <TabsList data-tour="config-nav">
                 <TabsTrigger value="integrations">Integrations</TabsTrigger>
                 <TabsTrigger value="agents">AI Agents & Rules</TabsTrigger>
                 <TabsTrigger value="hitl">HITL & Escalation</TabsTrigger>
@@ -89,7 +95,7 @@ export default function ConfigurationPage() {
 
               <TabsContent value="integrations">
                 <div className="grid grid-cols-1 gap-4 xl:grid-cols-12">
-                  <Card className="xl:col-span-12">
+                  <Card data-tour="config-d365" className="xl:col-span-12">
                     <CardHeader>
                       <div className="flex flex-wrap items-start justify-between gap-3">
                         <div className="flex items-start gap-3">
@@ -103,7 +109,7 @@ export default function ConfigurationPage() {
                         </div>
                         <div className="flex flex-wrap items-center gap-2">
                           <Badge variant={statusVariant}>{d365.state.toUpperCase()}</Badge>
-                          <Button variant="secondary" size="sm" onClick={simulateD365Ping}>
+                          <Button data-tour="config-d365-test" variant="secondary" size="sm" onClick={simulateD365Ping}>
                             Test Connection
                           </Button>
                           <Button variant="secondary" size="sm" onClick={() => toast.success('Saved')}>
@@ -137,7 +143,7 @@ export default function ConfigurationPage() {
                   </Card>
 
                   <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:col-span-12">
-                    <Card>
+                    <Card data-tour="config-irp">
                       <CardHeader>
                         <CardTitle>GST E-Invoice Portal (IRP)</CardTitle>
                       </CardHeader>
@@ -149,7 +155,7 @@ export default function ConfigurationPage() {
                         </Button>
                       </CardContent>
                     </Card>
-                    <Card>
+                    <Card data-tour="config-email">
                       <CardHeader>
                         <CardTitle>Email Systems</CardTitle>
                       </CardHeader>
@@ -166,7 +172,7 @@ export default function ConfigurationPage() {
               </TabsContent>
 
               <TabsContent value="agents">
-                <div className="space-y-3">
+                <div data-tour="config-agents" className="space-y-3">
                   {[
                     { t: 'Confidence Thresholds', d: 'Default 92% for auto-processing; below triggers HITL' },
                     { t: 'Max Retry Count', d: '3 retries for D365 and IRP actions with exponential backoff' },
@@ -181,7 +187,7 @@ export default function ConfigurationPage() {
               </TabsContent>
 
               <TabsContent value="hitl">
-                <div className="space-y-3">
+                <div data-tour="config-hitl" className="space-y-3">
                   {[
                     { t: 'HITL Checkpoints', d: 'Extraction confidence < 92%, New Customer, Ambiguous Tax, High Value approvals' },
                     { t: 'SLA Timers', d: 'New customer SLA 4 hours; escalation after 2 hours idle' },
@@ -196,7 +202,7 @@ export default function ConfigurationPage() {
               </TabsContent>
 
               <TabsContent value="templates">
-                <div className="space-y-3">
+                <div data-tour="config-templates" className="space-y-3">
                   {['Intake confirmation', 'HITL assignment', 'Approval request', 'Invoice dispatch', 'Exception alerts'].map((t) => (
                     <div key={t} className="rounded-xl bg-slate-50 px-4 py-3 dark:bg-slate-900">
                       <div className="text-sm font-semibold text-slate-900 dark:text-slate-50">{t}</div>
@@ -224,7 +230,7 @@ export default function ConfigurationPage() {
               </TabsContent>
 
               <TabsContent value="security">
-                <div className="space-y-3">
+                <div data-tour="config-security" className="space-y-3">
                   {[
                     { t: 'RBAC Matrix', d: 'Operator, Approver, Admin, Tax/Legal, IT roles with fine-grained controls' },
                     { t: 'Audit Log Retention', d: '7-year retention policy with access logging and hash verification' },
@@ -255,7 +261,7 @@ export default function ConfigurationPage() {
           </CardContent>
         </Card>
 
-        <Card className="xl:col-span-4">
+        <Card data-tour="config-validation" className="xl:col-span-4">
           <CardHeader>
             <CardTitle>Live Validation</CardTitle>
           </CardHeader>
@@ -318,6 +324,8 @@ export default function ConfigurationPage() {
           </CardContent>
         </Card>
       </div>
+
+      <ConfigurationTour tab={tab} setTab={setTab} />
     </div>
   )
 }

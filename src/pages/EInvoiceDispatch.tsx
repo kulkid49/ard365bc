@@ -1,10 +1,11 @@
-import { useMemo, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import { useQuery } from '@tanstack/react-query'
-import { ExternalLink, QrCode, RefreshCcw, Send, TriangleAlert } from 'lucide-react'
+import { ExternalLink, FileText, QrCode, RefreshCcw, Send, TriangleAlert } from 'lucide-react'
 import { toast } from 'sonner'
 import { Link } from 'react-router-dom'
 
 import { getDispatchInvoices } from '@/api/mockApi'
+import { EInvoiceDispatchTour } from '@/components/common/EInvoiceDispatchTour'
 import { PageHeader } from '@/components/common/PageHeader'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
@@ -37,6 +38,11 @@ export default function EInvoiceDispatchPage() {
   const [tab, setTab] = useState<'ready' | 'draft' | 'irp' | 'dispatched' | 'bounces' | 'all'>('ready')
   const [selectedId, setSelectedId] = useState<string>(() => invoices[0]?.d365InvoiceNo ?? '')
 
+  useEffect(() => {
+    if (!invoices.length) return
+    if (!selectedId) setSelectedId(invoices[0].d365InvoiceNo)
+  }, [invoices, selectedId])
+
   const filtered = useMemo(() => {
     if (tab === 'all') return invoices
     if (tab === 'irp') return invoices.filter((i) => i.irpStatus !== 'IRN Generated')
@@ -48,38 +54,63 @@ export default function EInvoiceDispatchPage() {
 
   const selected = useMemo(() => filtered.find((i) => i.d365InvoiceNo === selectedId) ?? filtered[0] ?? invoices[0], [filtered, invoices, selectedId])
 
+  const headerSummary = useMemo(() => {
+    const today = invoices.length
+    const dispatched = invoices.filter((i) => i.dispatchStatus === 'Delivered' || i.dispatchStatus === 'Sent').length
+    const pending = invoices.filter((i) => i.dispatchStatus === 'Ready' || i.dispatchStatus === 'Bounced' || i.irpStatus !== 'IRN Generated').length
+    return `${today} Invoices Today • ${dispatched} Dispatched • ${pending} Pending`
+  }, [invoices])
+
+  const irpResponse = useMemo(() => {
+    if (!selected) return null
+    return {
+      irpStatus: selected.irpStatus,
+      irn: selected.irn ?? null,
+      ackNo: selected.irpStatus === 'IRN Generated' ? `ACK-${String(100000 + (selected.d365InvoiceNo.length % 90000))}` : null,
+      ackDt: selected.irpStatus === 'IRN Generated' ? '25 Apr 2026, 02:18 PM' : null,
+      signedQr: selected.irpStatus === 'IRN Generated' ? `QR::${selected.irn ?? 'PENDING'}` : null,
+      warnings: selected.irpStatus === 'Pending' ? ['IRP acknowledgement pending'] : [],
+      source: { d365InvoiceNo: selected.d365InvoiceNo, caseId: selected.caseId },
+    }
+  }, [selected])
+
   return (
     <div className="space-y-6">
-      <PageHeader
-        title="E-Invoice & Dispatch Center"
-        subtitle="Invoice Generation → IRP → Dispatch with live tracking"
-        actions={[
-          { label: 'Generate Invoice in D365', variant: 'secondary', onClick: () => toast.message('Invoice generation queued') },
-          { label: 'Bulk E-Invoice (IRP)', variant: 'secondary', onClick: () => toast.message('IRP batch queued') },
-          { label: 'Bulk Dispatch', variant: 'secondary', onClick: () => toast.message('Dispatch batch queued') },
-          { label: 'IRP Status Check', variant: 'secondary', onClick: () => toast.success('IRP status refreshed') },
-        ]}
-        rightSlot={
-          <Button variant="ghost" onClick={() => toast.success('Refreshed')}>
-            <RefreshCcw className="mr-2 h-4 w-4" />
-            Refresh
-          </Button>
-        }
-      />
+      <div data-tour="dispatch-header">
+        <PageHeader
+          title="E-Invoice & Dispatch Center"
+          subtitle={headerSummary}
+          actionsDataTour="dispatch-bulk"
+          actions={[
+            { label: 'Generate Invoice in D365', variant: 'secondary', onClick: () => toast.message('Invoice generation queued') },
+            { label: 'Bulk E-Invoice (IRP)', variant: 'secondary', onClick: () => toast.message('IRP batch queued') },
+            { label: 'Bulk Dispatch', variant: 'secondary', onClick: () => toast.message('Dispatch batch queued') },
+            { label: 'IRP Status Check', variant: 'secondary', onClick: () => toast.success('IRP status refreshed') },
+          ]}
+          rightSlot={
+            <Button variant="ghost" onClick={() => toast.success('Refreshed')}>
+              <RefreshCcw className="mr-2 h-4 w-4" />
+              Refresh
+            </Button>
+          }
+        />
+      </div>
 
       <Tabs value={tab} onValueChange={(v) => setTab(v as typeof tab)}>
-        <TabsList>
-          <TabsTrigger value="ready">Ready for Dispatch</TabsTrigger>
-          <TabsTrigger value="draft">Draft Invoices</TabsTrigger>
-          <TabsTrigger value="irp">E-Invoice Pending (IRP)</TabsTrigger>
-          <TabsTrigger value="dispatched">Dispatched</TabsTrigger>
-          <TabsTrigger value="bounces">Delivery Failures</TabsTrigger>
-          <TabsTrigger value="all">All Invoices</TabsTrigger>
-        </TabsList>
+        <div data-tour="dispatch-tabs">
+          <TabsList>
+            <TabsTrigger value="ready">Ready for Dispatch</TabsTrigger>
+            <TabsTrigger value="draft">Draft Invoices</TabsTrigger>
+            <TabsTrigger value="irp">E-Invoice Pending (IRP)</TabsTrigger>
+            <TabsTrigger value="dispatched">Dispatched</TabsTrigger>
+            <TabsTrigger value="bounces">Delivery Failures</TabsTrigger>
+            <TabsTrigger value="all">All Invoices</TabsTrigger>
+          </TabsList>
+        </div>
 
         <TabsContent value={tab}>
           <div className="grid grid-cols-1 gap-4 xl:grid-cols-12">
-            <Card className="xl:col-span-8">
+            <Card data-tour="dispatch-table" className="xl:col-span-8">
               <CardHeader>
                 <CardTitle>Invoices</CardTitle>
               </CardHeader>
@@ -87,14 +118,31 @@ export default function EInvoiceDispatchPage() {
                 <Table>
                   <TableHeader>
                     <TableRow>
-                      <TableHead>Case ID</TableHead>
-                      <TableHead>Customer</TableHead>
-                      <TableHead>D365 Invoice #</TableHead>
-                      <TableHead>Value (₹)</TableHead>
-                      <TableHead>IRP Status</TableHead>
+                      <TableHead>
+                        <div data-tour="dispatch-col-caseid">Case ID</div>
+                      </TableHead>
+                      <TableHead>
+                        <div data-tour="dispatch-col-customer">Customer</div>
+                      </TableHead>
+                      <TableHead>
+                        <div data-tour="dispatch-col-invoice">D365 Invoice #</div>
+                      </TableHead>
+                      <TableHead>
+                        <div data-tour="dispatch-col-value">Invoice Value</div>
+                      </TableHead>
+                      <TableHead>
+                        <div data-tour="dispatch-col-irp">IRP Status</div>
+                      </TableHead>
+                      <TableHead>
+                        <div data-tour="dispatch-col-qr">QR Code</div>
+                      </TableHead>
                       <TableHead>IRN</TableHead>
-                      <TableHead>Dispatch Status</TableHead>
-                      <TableHead>Channel</TableHead>
+                      <TableHead>
+                        <div data-tour="dispatch-col-dispatch">Dispatch Status</div>
+                      </TableHead>
+                      <TableHead>
+                        <div data-tour="dispatch-col-channel">Channel</div>
+                      </TableHead>
                       <TableHead>Dispatched At</TableHead>
                     </TableRow>
                   </TableHeader>
@@ -124,6 +172,24 @@ export default function EInvoiceDispatchPage() {
                         <TableCell>
                           <Badge variant={irpVariant(i.irpStatus)}>{i.irpStatus}</Badge>
                         </TableCell>
+                        <TableCell>
+                          <button
+                            type="button"
+                            className={cn(
+                              'inline-flex items-center gap-2 rounded-lg px-2 py-1 text-sm font-medium',
+                              i.irpStatus === 'IRN Generated'
+                                ? 'bg-qa-primary/10 text-qa-primary hover:bg-qa-primary/15 dark:bg-qa-primary/15'
+                                : 'bg-slate-100 text-slate-500 dark:bg-slate-900 dark:text-slate-400',
+                            )}
+                            onClick={(e) => {
+                              e.stopPropagation()
+                              toast.message(i.irpStatus === 'IRN Generated' ? 'QR preview opened' : 'QR available after IRN generation')
+                            }}
+                          >
+                            <QrCode className="h-4 w-4" />
+                            {i.irpStatus === 'IRN Generated' ? 'Preview' : '—'}
+                          </button>
+                        </TableCell>
                         <TableCell className="min-w-[220px]">
                           {i.irn ? (
                             <div className="flex items-center gap-2">
@@ -148,7 +214,7 @@ export default function EInvoiceDispatchPage() {
               </CardContent>
             </Card>
 
-            <Card className="xl:col-span-4">
+            <Card data-tour="dispatch-sidebar" className="xl:col-span-4">
               <CardHeader>
                 <CardTitle>Invoice Preview & Actions</CardTitle>
               </CardHeader>
@@ -166,22 +232,53 @@ export default function EInvoiceDispatchPage() {
                       </div>
                     </div>
 
-                    <div className="rounded-xl bg-white p-4 ring-1 ring-slate-200/60 dark:bg-slate-950 dark:ring-slate-800/70">
+                    <div data-tour="dispatch-pdf-qr" className="rounded-xl bg-white p-4 ring-1 ring-slate-200/60 dark:bg-slate-950 dark:ring-slate-800/70">
                       <div className="flex items-center justify-between gap-3">
-                        <div className="text-sm font-semibold text-slate-900 dark:text-slate-50">IRN & QR</div>
-                        <Button variant="secondary" size="sm" onClick={() => toast.message('QR preview opened')}>
-                          <QrCode className="mr-2 h-4 w-4" />
-                          View QR
+                        <div className="text-sm font-semibold text-slate-900 dark:text-slate-50">Invoice PDF + Signed QR</div>
+                        <Button variant="secondary" size="sm" onClick={() => toast.message('Opened invoice preview')}>
+                          <FileText className="mr-2 h-4 w-4" />
+                          Open PDF
                         </Button>
                       </div>
-                      <div className="mt-3 grid grid-cols-1 gap-2 text-sm text-slate-600 dark:text-slate-400">
-                        <div className="rounded-xl bg-slate-50 px-3 py-2 dark:bg-slate-900">IRN: {selected.irn ?? 'Not generated'}</div>
-                        <div className="rounded-xl bg-slate-50 px-3 py-2 dark:bg-slate-900">Ack: 24 Apr 2026, 18:42</div>
+                      <div className="mt-3 grid grid-cols-1 gap-3">
+                        <div className="overflow-hidden rounded-xl ring-1 ring-slate-200/60 dark:ring-slate-800/70">
+                          <iframe title="Invoice PDF Preview" src="/docs/Invoice_Sample.pdf" className="h-56 w-full bg-white dark:bg-slate-950" />
+                        </div>
+                        <div className="rounded-xl bg-slate-50 p-3 dark:bg-slate-900">
+                          <div className="flex items-center justify-between gap-3">
+                            <div className="text-xs font-semibold uppercase tracking-wide text-slate-500 dark:text-slate-400">Signed QR</div>
+                            <Badge variant={irpVariant(selected.irpStatus)}>{selected.irpStatus}</Badge>
+                          </div>
+                          <div className="mt-2 grid place-items-center rounded-xl bg-white p-4 ring-1 ring-slate-200/60 dark:bg-slate-950 dark:ring-slate-800/70">
+                            <QrCode className={cn('h-16 w-16', selected.irpStatus === 'IRN Generated' ? 'text-qa-primary' : 'text-slate-400')} />
+                            <div className="mt-2 text-xs text-slate-600 dark:text-slate-400">
+                              {selected.irpStatus === 'IRN Generated' ? 'Compliant IRP-signed QR ready for dispatch' : 'Generate IRN to unlock signed QR'}
+                            </div>
+                          </div>
+                        </div>
                       </div>
                     </div>
 
+                    <div data-tour="dispatch-irn-details" className="rounded-xl bg-white p-4 ring-1 ring-slate-200/60 dark:bg-slate-950 dark:ring-slate-800/70">
+                      <div className="text-sm font-semibold text-slate-900 dark:text-slate-50">IRP Status & IRN Details</div>
+                      <div className="mt-2 space-y-2 text-sm text-slate-600 dark:text-slate-400">
+                        <div className="flex items-center justify-between rounded-xl bg-slate-50 px-3 py-2 dark:bg-slate-900">
+                          <span>IRN</span>
+                          <span className="font-medium text-slate-900 dark:text-slate-50">{selected.irn ?? '—'}</span>
+                        </div>
+                        <div className="flex items-center justify-between rounded-xl bg-slate-50 px-3 py-2 dark:bg-slate-900">
+                          <span>Ack No.</span>
+                          <span className="font-medium text-slate-900 dark:text-slate-50">{irpResponse?.ackNo ?? '—'}</span>
+                        </div>
+                      </div>
+                      <details className="mt-3 rounded-xl bg-slate-50 px-3 py-2 text-sm text-slate-600 dark:bg-slate-900 dark:text-slate-400">
+                        <summary className="cursor-pointer font-medium text-slate-900 dark:text-slate-50">IRP JSON Response</summary>
+                        <pre className="mt-2 overflow-auto text-xs">{JSON.stringify(irpResponse, null, 2)}</pre>
+                      </details>
+                    </div>
+
                     {selected.dispatchStatus === 'Bounced' ? (
-                      <div className="rounded-xl bg-rose-500/10 p-4 text-rose-800 dark:bg-rose-500/15 dark:text-rose-300">
+                      <div data-tour="dispatch-bounce" className="rounded-xl bg-rose-500/10 p-4 text-rose-800 dark:bg-rose-500/15 dark:text-rose-300">
                         <div className="flex items-center gap-2 text-sm font-semibold">
                           <TriangleAlert className="h-4 w-4" /> Delivery bounced
                         </div>
@@ -189,10 +286,19 @@ export default function EInvoiceDispatchPage() {
                       </div>
                     ) : null}
 
-                    <div className="grid grid-cols-1 gap-2">
+                    <div data-tour="dispatch-d365-actions" className="grid grid-cols-1 gap-2">
                       <Button variant="secondary" onClick={() => toast.message('Regenerate invoice queued')}>
                         Regenerate Invoice in D365
                       </Button>
+                      <Button
+                        variant="secondary"
+                        onClick={() => toast.message('Opened invoice in Business Central')}
+                      >
+                        View Posted Invoice in Business Central
+                      </Button>
+                    </div>
+
+                    <div data-tour="dispatch-actions" className="grid grid-cols-1 gap-2">
                       <Button
                         variant="primary"
                         onClick={() => toast.success(selected.irpStatus === 'IRN Generated' ? 'Dispatch queued' : 'IRP generation queued')}
@@ -216,6 +322,8 @@ export default function EInvoiceDispatchPage() {
           </div>
         </TabsContent>
       </Tabs>
+
+      <EInvoiceDispatchTour tab={tab} setTab={setTab} />
     </div>
   )
 }
