@@ -43,6 +43,36 @@ function kindStyles(kind: NodeKind) {
   return { fill: '#22c55e', stroke: '#16a34a', text: '#0f172a' }
 }
 
+function edgePath(a: FlowNode, b: FlowNode) {
+  const acx = a.x + a.w / 2
+  const acy = a.y + a.h / 2
+  const bcx = b.x + b.w / 2
+  const bcy = b.y + b.h / 2
+  const dx = bcx - acx
+  const dy = bcy - acy
+
+  const horizontal = Math.abs(dx) >= Math.abs(dy)
+  const signX = dx >= 0 ? 1 : -1
+  const signY = dy >= 0 ? 1 : -1
+
+  const start = horizontal
+    ? { x: signX > 0 ? a.x + a.w : a.x, y: acy }
+    : { x: acx, y: signY > 0 ? a.y + a.h : a.y }
+  const end = horizontal
+    ? { x: signX > 0 ? b.x : b.x + b.w, y: bcy }
+    : { x: bcx, y: signY > 0 ? b.y : b.y + b.h }
+
+  const bend = horizontal ? Math.min(170, Math.max(90, Math.abs(dx) * 0.45)) : Math.min(170, Math.max(90, Math.abs(dy) * 0.45))
+
+  const c1 = horizontal ? { x: start.x + bend * signX, y: start.y } : { x: start.x, y: start.y + bend * signY }
+  const c2 = horizontal ? { x: end.x - bend * signX, y: end.y } : { x: end.x, y: end.y - bend * signY }
+
+  return {
+    d: `M ${start.x} ${start.y} C ${c1.x} ${c1.y}, ${c2.x} ${c2.y}, ${end.x} ${end.y}`,
+    mid: { x: (start.x + end.x) / 2, y: (start.y + end.y) / 2 },
+  }
+}
+
 function diamondPoints(x: number, y: number, w: number, h: number) {
   const cx = x + w / 2
   const cy = y + h / 2
@@ -141,7 +171,7 @@ export default function ProcessFlowPage() {
         label: '1. Email Intake',
         kind: 'auto',
         x: 60,
-        y: 80,
+        y: 60,
         w: 220,
         h: 66,
         route: '/email-inbox',
@@ -160,7 +190,7 @@ export default function ProcessFlowPage() {
         label: '2. Extraction',
         kind: 'auto',
         x: 340,
-        y: 80,
+        y: 60,
         w: 220,
         h: 66,
         route: '/hitl',
@@ -178,8 +208,8 @@ export default function ProcessFlowPage() {
         id: 'dec-conf',
         label: 'Confidence ≥ 92%?',
         kind: 'decision',
-        x: 630,
-        y: 74,
+        x: 620,
+        y: 54,
         w: 150,
         h: 78,
         tooltip: {
@@ -196,8 +226,8 @@ export default function ProcessFlowPage() {
         id: 'hitl',
         label: 'HITL Review',
         kind: 'hitl',
-        x: 600,
-        y: 190,
+        x: 590,
+        y: 160,
         w: 210,
         h: 66,
         route: '/hitl',
@@ -215,8 +245,8 @@ export default function ProcessFlowPage() {
         id: 'cust',
         label: '3. Customer Master',
         kind: 'auto',
-        x: 840,
-        y: 80,
+        x: 620,
+        y: 260,
         w: 220,
         h: 66,
         route: '/customers',
@@ -234,8 +264,8 @@ export default function ProcessFlowPage() {
         id: 'so',
         label: '4. Sales Order',
         kind: 'd365',
-        x: 1120,
-        y: 80,
+        x: 340,
+        y: 260,
         w: 220,
         h: 66,
         route: '/sales-orders',
@@ -253,8 +283,8 @@ export default function ProcessFlowPage() {
         id: 'tax',
         label: '5. Tax Validation',
         kind: 'hitl',
-        x: 1400,
-        y: 80,
+        x: 60,
+        y: 260,
         w: 220,
         h: 66,
         route: '/tax-review',
@@ -272,8 +302,8 @@ export default function ProcessFlowPage() {
         id: 'appr',
         label: '6. Approvals',
         kind: 'hitl',
-        x: 1680,
-        y: 80,
+        x: 60,
+        y: 380,
         w: 220,
         h: 66,
         route: '/approvals',
@@ -291,8 +321,8 @@ export default function ProcessFlowPage() {
         id: 'post',
         label: '7–8. Post + Invoice',
         kind: 'd365',
-        x: 1960,
-        y: 80,
+        x: 340,
+        y: 380,
         w: 240,
         h: 66,
         route: '/e-invoice-dispatch',
@@ -310,8 +340,8 @@ export default function ProcessFlowPage() {
         id: 'irp',
         label: '9. GST E‑Invoice (IRP)',
         kind: 'irp',
-        x: 2240,
-        y: 80,
+        x: 640,
+        y: 380,
         w: 240,
         h: 66,
         route: '/e-invoice-dispatch',
@@ -329,8 +359,8 @@ export default function ProcessFlowPage() {
         id: 'dispatch',
         label: '10. Dispatch',
         kind: 'auto',
-        x: 2520,
-        y: 80,
+        x: 640,
+        y: 500,
         w: 200,
         h: 66,
         route: '/e-invoice-dispatch',
@@ -348,8 +378,8 @@ export default function ProcessFlowPage() {
         id: 'done',
         label: 'Completed + Audit',
         kind: 'end',
-        x: 2750,
-        y: 80,
+        x: 340,
+        y: 500,
         w: 210,
         h: 66,
         route: '/audit-compliance',
@@ -441,12 +471,10 @@ export default function ProcessFlowPage() {
           rightSlot={
             <div className="flex flex-wrap items-center gap-2" data-tour="flow-controls">
               <Button variant="secondary" size="sm" onClick={() => setScale((s) => Math.max(0.55, Math.round((s - 0.1) * 100) / 100))}>
-                <Minus className="mr-2 h-4 w-4" />
-                Zoom Out
+                <Minus className="h-4 w-4" />
               </Button>
               <Button variant="secondary" size="sm" onClick={() => setScale((s) => Math.min(1.75, Math.round((s + 0.1) * 100) / 100))}>
-                <Plus className="mr-2 h-4 w-4" />
-                Zoom In
+                <Plus className="h-4 w-4" />
               </Button>
               <Badge variant="neutral">{Math.round(scale * 100)}%</Badge>
             </div>
@@ -478,15 +506,26 @@ export default function ProcessFlowPage() {
                 'relative overflow-hidden rounded-2xl bg-slate-50 ring-1 ring-slate-200/60 dark:bg-slate-900 dark:ring-slate-800/70',
                 dragging && 'cursor-grabbing',
               )}
-              style={{ height: 520 }}
+              style={{ height: 640 }}
               onWheel={onWheel}
               onMouseDown={onMouseDown}
               onMouseMove={onMouseMove}
               onMouseUp={onMouseUp}
               onMouseLeave={onMouseUp}
             >
+              <div className="absolute right-3 top-3 z-10 flex items-center gap-2" data-tour="flow-zoom">
+                <Button variant="secondary" size="icon" onClick={() => setScale((s) => Math.max(0.55, Math.round((s - 0.1) * 100) / 100))} aria-label="Zoom out">
+                  <Minus className="h-4 w-4" />
+                </Button>
+                <Button variant="secondary" size="icon" onClick={() => setScale((s) => Math.min(1.75, Math.round((s + 0.1) * 100) / 100))} aria-label="Zoom in">
+                  <Plus className="h-4 w-4" />
+                </Button>
+                <div className="rounded-full bg-white px-3 py-2 text-xs font-semibold text-slate-700 shadow-sm ring-1 ring-slate-200/60 dark:bg-slate-950 dark:text-slate-300 dark:ring-slate-800/70">
+                  {Math.round(scale * 100)}%
+                </div>
+              </div>
               <div style={{ transform: `translate(${tx}px, ${ty}px) scale(${scale})`, transformOrigin: '0 0' }}>
-                <svg ref={svgRef} width={3050} height={320} viewBox="0 0 3050 320" role="img" aria-label="Agentic AR process flow">
+                <svg ref={svgRef} width={980} height={640} viewBox="0 0 980 640" role="img" aria-label="Agentic AR process flow">
                   <defs>
                     <marker id="arrow" markerWidth="10" markerHeight="10" refX="10" refY="5" orient="auto" markerUnits="strokeWidth">
                       <path d="M0,0 L10,5 L0,10 z" fill="#334155" />
@@ -497,12 +536,6 @@ export default function ProcessFlowPage() {
                     const a = byId.get(e.from)
                     const b = byId.get(e.to)
                     if (!a || !b) return null
-
-                    const ax = a.x + a.w
-                    const ay = a.y + a.h / 2
-
-                    const bx = b.x
-                    const by = b.y + b.h / 2
 
                     const loop = e.from === e.to
                     if (loop) {
@@ -530,11 +563,11 @@ export default function ProcessFlowPage() {
                       )
                     }
 
-                    const midX = ax + (bx - ax) / 2
+                    const p = edgePath(a, b)
                     return (
                       <g key={`${e.from}-${e.to}-${idx}`}>
                         <path
-                          d={`M ${ax} ${ay} C ${midX} ${ay}, ${midX} ${by}, ${bx} ${by}`}
+                          d={p.d}
                           fill="none"
                           stroke="#334155"
                           strokeWidth={2}
@@ -543,7 +576,7 @@ export default function ProcessFlowPage() {
                           opacity={e.dashed ? 0.7 : 1}
                         />
                         {e.label ? (
-                          <text x={midX - 18} y={(ay + by) / 2 - 8} fontSize={10} fill="#334155">
+                          <text x={p.mid.x - 22} y={p.mid.y - 10} fontSize={10} fill="#334155">
                             {e.label}
                           </text>
                         ) : null}
