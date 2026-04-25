@@ -458,6 +458,8 @@ export function AppLayout() {
                                 ? 'billing'
                                 : pathname.startsWith('/tax-review')
                                   ? 'tax'
+                                  : pathname.startsWith('/approvals')
+                                    ? 'approvals'
                                   : pathname.startsWith('/cases/') && pathname !== '/cases'
                                     ? 'case'
                                     : pathname.startsWith('/cases')
