@@ -7,6 +7,7 @@ import { Link } from 'react-router-dom'
 import { getDispatchInvoices } from '@/api/mockApi'
 import { EInvoiceDispatchTour } from '@/components/common/EInvoiceDispatchTour'
 import { PageHeader } from '@/components/common/PageHeader'
+import { DynamicPDFViewer } from '@/components/pdf/DynamicPDFViewer'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
@@ -241,9 +242,16 @@ export default function EInvoiceDispatchPage() {
                         </Button>
                       </div>
                       <div className="mt-3 grid grid-cols-1 gap-3">
-                        <div className="overflow-hidden rounded-xl ring-1 ring-slate-200/60 dark:ring-slate-800/70">
-                          <iframe title="Invoice PDF Preview" src="/docs/Invoice_Sample.pdf" className="h-56 w-full bg-white dark:bg-slate-950" />
-                        </div>
+                        <DynamicPDFViewer
+                          docType={selected.irpStatus === 'IRN Generated' ? 'E-Invoice' : 'Invoice'}
+                          ctx={{
+                            customerName: selected.customerName,
+                            contractValue: selected.invoiceValue,
+                            d365InvoiceNo: selected.d365InvoiceNo,
+                            irn: selected.irn ?? undefined,
+                          }}
+                          heightClassName="h-56"
+                        />
                         <div className="rounded-xl bg-slate-50 p-3 dark:bg-slate-900">
                           <div className="flex items-center justify-between gap-3">
                             <div className="text-xs font-semibold uppercase tracking-wide text-slate-500 dark:text-slate-400">Signed QR</div>

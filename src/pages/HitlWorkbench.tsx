@@ -7,6 +7,7 @@ import { Link } from 'react-router-dom'
 import { getAgenticCases } from '@/api/mockApi'
 import { PageHeader } from '@/components/common/PageHeader'
 import { HitlWorkbenchTour } from '@/components/common/HitlWorkbenchTour'
+import { DynamicPDFViewer } from '@/components/pdf/DynamicPDFViewer'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
@@ -207,8 +208,22 @@ export default function HitlWorkbenchPage() {
                       </span>
                     </div>
                   </div>
-                  <div className="mt-3 overflow-hidden rounded-xl bg-white ring-1 ring-slate-200/60 dark:bg-slate-950 dark:ring-slate-800/70">
-                    <iframe title="HITL Contract" src="/docs/SOW_Sample.pdf" className="h-[420px] w-full" />
+                  <div className="mt-3">
+                    {selected ? (
+                      <DynamicPDFViewer
+                        docType={selected.documentType}
+                        ctx={{
+                          case: selected,
+                          customerName: selected.customerName,
+                          contractValue: selected.contractValue,
+                        }}
+                        heightClassName="h-[420px]"
+                      />
+                    ) : (
+                      <div className="grid h-[220px] place-items-center rounded-xl bg-white text-sm text-slate-600 ring-1 ring-slate-200/60 dark:bg-slate-950 dark:text-slate-400 dark:ring-slate-800/70">
+                        Select a case to preview.
+                      </div>
+                    )}
                   </div>
                   <div className="mt-3 flex items-center gap-2 text-sm font-semibold text-slate-900 dark:text-slate-50">
                     <TriangleAlert className="h-4 w-4 text-amber-600 dark:text-amber-300" />

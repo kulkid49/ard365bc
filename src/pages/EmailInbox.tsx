@@ -4,6 +4,7 @@ import { Link, useNavigate } from 'react-router-dom'
 
 import { PageHeader } from '@/components/common/PageHeader'
 import { EmailInboxTour } from '@/components/common/EmailInboxTour'
+import { generatePdfDownload } from '@/components/pdf/DynamicPDFViewer'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
@@ -616,12 +617,20 @@ export default function EmailInboxPage() {
                             </div>
                           </div>
                           <div className="mt-3 flex flex-wrap items-center gap-2">
-                            <a className="inline-flex" href={a.url} target="_blank" rel="noreferrer">
-                              <Button variant="secondary" size="sm">
-                                <Download className="mr-2 h-4 w-4" />
-                                Download
-                              </Button>
-                            </a>
+                            <Button
+                              variant="secondary"
+                              size="sm"
+                              onClick={() =>
+                                generatePdfDownload({
+                                  docType: classificationFor(selected).docType,
+                                  ctx: { customerName: selected.fromName, contractValue: 480_000, case: undefined },
+                                  fileName: a.fileName,
+                                })
+                              }
+                            >
+                              <Download className="mr-2 h-4 w-4" />
+                              Download
+                            </Button>
                             <Button
                               variant="primary"
                               size="sm"

@@ -7,6 +7,7 @@ import { Link } from 'react-router-dom'
 import { getAgenticCases } from '@/api/mockApi'
 import { PageHeader } from '@/components/common/PageHeader'
 import { TaxReviewTour } from '@/components/common/TaxReviewTour'
+import { DynamicPDFViewer } from '@/components/pdf/DynamicPDFViewer'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
@@ -140,8 +141,18 @@ export default function TaxReviewPage() {
           <CardContent className="space-y-3">
             <div className="rounded-xl bg-slate-50 px-4 py-3 dark:bg-slate-900">
               <div className="text-sm font-semibold text-slate-900 dark:text-slate-50">Contract tax highlights</div>
-              <div className="mt-2 overflow-hidden rounded-xl bg-white ring-1 ring-slate-200/60 dark:bg-slate-950 dark:ring-slate-800/70">
-                <iframe title="Contract (Tax Highlights)" src="/docs/SOW_Sample.pdf" className="h-60 w-full" />
+              <div className="mt-2">
+                {selected ? (
+                  <DynamicPDFViewer
+                    docType={selected.documentType}
+                    ctx={{ case: selected, customerName: selected.customerName, contractValue: selected.contractValue }}
+                    heightClassName="h-60"
+                  />
+                ) : (
+                  <div className="grid h-40 place-items-center rounded-xl bg-white text-sm text-slate-600 ring-1 ring-slate-200/60 dark:bg-slate-950 dark:text-slate-400 dark:ring-slate-800/70">
+                    Select a case to preview.
+                  </div>
+                )}
               </div>
               <div className="mt-3 flex flex-wrap items-center gap-2">
                 <Button variant="secondary" size="sm" onClick={() => toast.message('Open PDF viewer')}>

@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useState } from 'react'
 import { useParams } from 'react-router-dom'
 import { useQuery } from '@tanstack/react-query'
-import { Copy, ExternalLink, FileText, Play, RefreshCcw, ShieldAlert } from 'lucide-react'
+import { Copy, ExternalLink, Play, RefreshCcw, ShieldAlert } from 'lucide-react'
 import { toast } from 'sonner'
 
 import { getAgenticCases, getAuditEvents, getCaseDocuments } from '@/api/mockApi'
@@ -13,6 +13,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Input } from '@/components/ui/input'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table'
+import { DynamicPDFViewer } from '@/components/pdf/DynamicPDFViewer'
 import type { AgenticCase, AgenticStage } from '@/data/mockData'
 
 function deepLink(kind: 'so' | 'invoice', no: string) {
@@ -276,29 +277,22 @@ export default function CaseDetailPage() {
             </CardHeader>
             <CardContent className="grid grid-cols-1 gap-3 xl:grid-cols-12">
               <div className="xl:col-span-8">
-                <div className="rounded-2xl bg-slate-50 p-4 dark:bg-slate-900" data-tour="case-pdf-viewer">
-                  <div className="flex items-center justify-between gap-3">
-                    <div className="text-sm font-semibold text-slate-900 dark:text-slate-50">PDF Viewer</div>
-                    <Button
-                      variant="secondary"
-                      size="sm"
-                      onClick={() => {
-                        if (!selectedDoc) return
-                        window.open(selectedDoc.url, '_blank', 'noopener,noreferrer')
+                <div data-tour="case-pdf-viewer">
+                  {selectedDoc ? (
+                    <DynamicPDFViewer
+                      docType={selectedDoc.kind}
+                      ctx={{
+                        case: found,
+                        customerName: found?.customerName,
+                        contractValue: found?.contractValue ?? 0,
+                        d365InvoiceNo: found?.d365InvoiceNo,
+                        d365SoNo: found?.d365SoNo,
+                        irn: found?.irnStatus === 'IRN Generated' ? `IRN-${(found.caseId ?? '').replaceAll('-', '')}-A` : undefined,
                       }}
-                      disabled={!selectedDoc}
-                    >
-                      <FileText className="mr-2 h-4 w-4" />
-                      Full Screen
-                    </Button>
-                  </div>
-                  <div className="mt-3 overflow-hidden rounded-xl bg-white ring-1 ring-slate-200/60 dark:bg-slate-950 dark:ring-slate-800/70">
-                    {selectedDoc ? (
-                      <iframe title={selectedDoc.title} src={selectedDoc.url} className="h-[520px] w-full" />
-                    ) : (
-                      <div className="grid h-[320px] place-items-center text-sm text-slate-600 dark:text-slate-400">No documents available.</div>
-                    )}
-                  </div>
+                    />
+                  ) : (
+                    <div className="rounded-2xl bg-slate-50 p-4 text-sm text-slate-600 dark:bg-slate-900 dark:text-slate-400">No documents available.</div>
+                  )}
                 </div>
               </div>
               <div className="xl:col-span-4">

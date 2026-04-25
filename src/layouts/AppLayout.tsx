@@ -439,54 +439,51 @@ export function AppLayout() {
                 </div>
               </Button>
 
-              <Tooltip>
-                <TooltipTrigger asChild>
-                  <Button
-                    variant="ghost"
-                    size="icon"
-                    onClick={() => {
-                      const params = new URLSearchParams(location.search)
-                      const pathname = location.pathname
-                      const tour =
-                        pathname.startsWith('/pipeline')
-                          ? 'pipeline'
-                          : pathname.startsWith('/hitl')
-                            ? 'hitl'
-                            : pathname.startsWith('/customers')
-                              ? 'customers'
-                              : pathname.startsWith('/sales-orders')
-                                ? 'billing'
-                                : pathname.startsWith('/tax-review')
-                                  ? 'tax'
-                                  : pathname.startsWith('/approvals')
-                                    ? 'approvals'
-                                    : pathname.startsWith('/e-invoice-dispatch')
-                                      ? 'dispatch'
-                                      : pathname.startsWith('/audit-compliance')
-                                        ? 'audit'
-                                        : pathname.startsWith('/agent-console')
-                                          ? 'console'
-                                          : pathname.startsWith('/configuration')
-                                            ? 'config'
-                                            : pathname.startsWith('/reports')
-                                              ? 'reports'
-                                              : pathname.startsWith('/email-inbox')
-                                                ? 'email'
-                                  : pathname.startsWith('/cases/') && pathname !== '/cases'
-                                    ? 'case'
-                                    : pathname.startsWith('/cases')
-                                      ? 'cases'
-                                      : '1'
-                      params.set('tour', tour)
-                      navigate(`${pathname}?${params.toString()}`)
-                    }}
-                    aria-label="Restart tour"
-                  >
-                    <LifeBuoy className="h-4 w-4" />
-                  </Button>
-                </TooltipTrigger>
-                <TooltipContent>Restart tour</TooltipContent>
-              </Tooltip>
+              <Button
+                variant="brand"
+                size="sm"
+                className="rounded-full shadow-[0_10px_30px_rgba(30,64,175,0.25)] hover:shadow-[0_12px_34px_rgba(30,64,175,0.3)]"
+                onClick={() => {
+                  const params = new URLSearchParams(location.search)
+                  const pathname = location.pathname
+                  const tour =
+                    pathname.startsWith('/pipeline')
+                      ? 'pipeline'
+                      : pathname.startsWith('/hitl')
+                        ? 'hitl'
+                        : pathname.startsWith('/customers')
+                          ? 'customers'
+                          : pathname.startsWith('/sales-orders')
+                            ? 'billing'
+                            : pathname.startsWith('/tax-review')
+                              ? 'tax'
+                              : pathname.startsWith('/approvals')
+                                ? 'approvals'
+                                : pathname.startsWith('/e-invoice-dispatch')
+                                  ? 'dispatch'
+                                  : pathname.startsWith('/audit-compliance')
+                                    ? 'audit'
+                                    : pathname.startsWith('/agent-console')
+                                      ? 'console'
+                                      : pathname.startsWith('/configuration')
+                                        ? 'config'
+                                        : pathname.startsWith('/reports')
+                                          ? 'reports'
+                                          : pathname.startsWith('/email-inbox')
+                                            ? 'email'
+                              : pathname.startsWith('/cases/') && pathname !== '/cases'
+                                ? 'case'
+                                : pathname.startsWith('/cases')
+                                  ? 'cases'
+                                  : '1'
+                  params.set('tour', tour)
+                  navigate(`${pathname}?${params.toString()}`)
+                }}
+                aria-label="Take a tour"
+              >
+                <LifeBuoy className="h-4 w-4" />
+                Take a Tour
+              </Button>
 
               <Tooltip>
                 <TooltipTrigger asChild>
