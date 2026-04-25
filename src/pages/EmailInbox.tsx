@@ -19,7 +19,7 @@ import { Input } from '@/components/ui/input'
 import { cn } from '@/lib/utils'
 import { toast } from 'sonner'
 
-type EmailTag = 'PO' | 'SOW' | 'Invoice'
+type EmailTag = 'PO' | 'SOW'
 
 type EmailAttachment = {
   id: string
@@ -78,8 +78,7 @@ function stripHtml(html: string) {
 
 function tagVariant(tag: EmailTag): React.ComponentProps<typeof Badge>['variant'] {
   if (tag === 'PO') return 'blue'
-  if (tag === 'SOW') return 'green'
-  return 'yellow'
+  return 'green'
 }
 
 function seedEmails(): InboxEmail[] {
@@ -93,15 +92,12 @@ function seedEmails(): InboxEmail[] {
       fromName: 'Acme Corp Pvt Ltd',
       fromEmail: 'ap@acme-corp.in',
       toEmail: 'invoice.receivable@qbadvisory.com',
-      subject: 'SOW signed – Acme | FY26 AR rollout (v3) – Please initiate billing',
+      subject: 'SOW signed – Acme | FY26 AR rollout (v3) – Please trigger intake',
       receivedAt: h(1.6),
-      tags: ['SOW', 'Invoice'],
-      attachments: [
-        { id: 'a1', fileName: 'SOW-Acme-FY26-v3.pdf', sizeKb: 842, url: '/docs/SOW_Sample.pdf' },
-        { id: 'a2', fileName: 'Invoice-Request-Acme-Apr25.pdf', sizeKb: 312, url: '/docs/Invoice_Sample.pdf' },
-      ],
+      tags: ['SOW'],
+      attachments: [{ id: 'a1', fileName: 'SOW-Acme-FY26-v3.pdf', sizeKb: 842, url: '/docs/SOW_Sample.pdf' }],
       bodyHtml:
-        '<p>Hello Team,</p><p>Please find the signed SOW attached for the FY26 AR rollout. Kindly initiate billing and create the Sales Order in D365 BC.</p><p>Regards,<br/>Acme AP Desk</p>',
+        '<p>Hello Team,</p><p>Please find the signed SOW attached for the FY26 AR rollout. Kindly trigger intake and validate the contract metadata.</p><p>Regards,<br/>Acme AP Desk</p>',
     },
     {
       id: 'em-002',
@@ -133,14 +129,14 @@ function seedEmails(): InboxEmail[] {
       id: 'em-004',
       unread: false,
       fromName: 'Acme Corp Pvt Ltd',
-      fromEmail: 'billing@acme-corp.in',
+      fromEmail: 'procurement@acme-corp.in',
       toEmail: 'invoice.receivable@qbadvisory.com',
-      subject: 'GST e-invoice request – IRN generation required for INV-2026-3928',
+      subject: 'PO revision – Acme | QBA-4798 (updated quantities & milestones)',
       receivedAt: h(8.4),
-      tags: ['Invoice'],
-      attachments: [{ id: 'a5', fileName: 'EInvoice-IRN-Request-INV-2026-3928.pdf', sizeKb: 196, url: '/docs/EInvoice_IRN_Sample.pdf' }],
+      tags: ['PO'],
+      attachments: [{ id: 'a5', fileName: 'PO-Acme-QBA-4798-Rev1.pdf', sizeKb: 524, url: '/docs/PO_Sample.pdf' }],
       bodyHtml:
-        '<p>Hello,</p><p>Please generate IRN for the attached invoice as per GST requirements and share the signed e-invoice PDF.</p><p>Regards,<br/>Acme Billing</p>',
+        '<p>Hello,</p><p>Please find the revised PO attached with updated quantities and delivery milestones. Kindly re-run extraction and confirm the updated PO header + line items.</p><p>Regards,<br/>Acme Procurement</p>',
     },
     {
       id: 'em-005',
@@ -159,14 +155,14 @@ function seedEmails(): InboxEmail[] {
       id: 'em-006',
       unread: false,
       fromName: 'Zenith Distributors',
-      fromEmail: 'logistics@zenithdist.com',
+      fromEmail: 'contracts@zenithdist.com',
       toEmail: 'invoice.receivable@qbadvisory.com',
-      subject: 'POD attached – delivery confirmation for SO-2026-4790',
+      subject: 'SOW addendum – Zenith | additional scope (Phase 3)',
       receivedAt: h(13.6),
-      tags: ['Invoice'],
-      attachments: [{ id: 'a7', fileName: 'POD-SO-2026-4790.pdf', sizeKb: 244, url: '/docs/POD_Sample.pdf' }],
+      tags: ['SOW'],
+      attachments: [{ id: 'a7', fileName: 'SOW-Addendum-Zenith-Phase3.pdf', sizeKb: 412, url: '/docs/SOW_Sample.pdf' }],
       bodyHtml:
-        '<p>Hi,</p><p>Please find POD attached for the delivery. You may proceed with invoicing.</p><p>Regards,<br/>Zenith Logistics</p>',
+        '<p>Hi,</p><p>Please find the SOW addendum attached for Phase 3 scope. Request you to validate and update the contract details in the case.</p><p>Regards,<br/>Zenith Contracts</p>',
     },
     {
       id: 'em-007',
@@ -200,12 +196,12 @@ function seedEmails(): InboxEmail[] {
       fromName: 'Zenith Distributors',
       fromEmail: 'ap@zenithdist.com',
       toEmail: 'invoice.receivable@qbadvisory.com',
-      subject: 'Invoice copy required – April invoice submission',
+      subject: 'PO follow-up – Zenith | PO-ZEN-2219 | confirmation required',
       receivedAt: h(33.2),
-      tags: ['Invoice'],
-      attachments: [{ id: 'a10', fileName: 'Invoice-Zenith-April.pdf', sizeKb: 286, url: '/docs/Invoice_Sample.pdf' }],
+      tags: ['PO'],
+      attachments: [{ id: 'a10', fileName: 'PO-ZEN-2219.pdf', sizeKb: 468, url: '/docs/PO_Sample.pdf' }],
       bodyHtml:
-        '<p>Dear Team,</p><p>Please share the invoice copy for April submission. Attachments included for reference.</p><p>Thanks,<br/>Zenith AP</p>',
+        '<p>Dear Team,</p><p>Please confirm receipt and processing of the attached PO. We request a quick validation of key PO fields and the expected next steps.</p><p>Thanks,<br/>Zenith AP</p>',
     },
     {
       id: 'em-010',
@@ -535,4 +531,3 @@ export default function EmailInboxPage() {
     </div>
   )
 }
-

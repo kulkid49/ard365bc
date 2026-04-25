@@ -43,8 +43,8 @@ type SideItem = { label: string; to: string; icon: React.ComponentType<{ classNa
 const sidebarItems: SideItem[] = [
   { label: 'Dashboard', to: '/', icon: LayoutDashboard },
   { label: 'Transaction Pipeline', to: '/pipeline', icon: Activity },
-  { label: 'Email Inbox', to: '/email-inbox', icon: Mail },
-  { label: 'Cases Inbox - Email Listener', to: '/cases', icon: FileText },
+  { label: 'Email Listener', to: '/email-inbox', icon: Mail },
+  { label: 'Cases Inbox', to: '/cases', icon: FileText },
   { label: 'HITL Workbench', to: '/hitl', icon: LifeBuoy },
   { label: 'Customer Master', to: '/customers', icon: HandCoins },
   { label: 'Sales Orders', to: '/sales-orders', icon: Wallet },
