@@ -1,8 +1,9 @@
 import { useEffect, useMemo, useState } from 'react'
-import { Archive, Download, FileText, Forward, Mail, Paperclip, RefreshCw, Search, Sparkles } from 'lucide-react'
-import { useNavigate } from 'react-router-dom'
+import { Archive, Download, FileText, Forward, Mail, Paperclip, RefreshCw, Search, ShieldAlert, ShieldCheck, Sparkles, Upload } from 'lucide-react'
+import { Link, useNavigate } from 'react-router-dom'
 
 import { PageHeader } from '@/components/common/PageHeader'
+import { EmailInboxTour } from '@/components/common/EmailInboxTour'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
@@ -31,6 +32,7 @@ type EmailAttachment = {
 type InboxEmail = {
   id: string
   unread: boolean
+  status: 'Pending' | 'Processed' | 'Quarantined'
   fromName: string
   fromEmail: string
   toEmail: string
@@ -39,6 +41,7 @@ type InboxEmail = {
   bodyHtml: string
   tags: EmailTag[]
   attachments: EmailAttachment[]
+  createdCaseId?: string
 }
 
 type FilterKey = 'All' | 'Unread' | 'With Attachments' | 'PO Detected' | 'SOW Detected'
@@ -67,6 +70,13 @@ function formatDateTime(ts: Date) {
   }).format(d)
 }
 
+function yyyymmdd(ts: Date) {
+  const y = ts.getFullYear()
+  const m = String(ts.getMonth() + 1).padStart(2, '0')
+  const d = String(ts.getDate()).padStart(2, '0')
+  return `${y}${m}${d}`
+}
+
 function stripHtml(html: string) {
   return html
     .replace(/<style[\s\S]*?>[\s\S]*?<\/style>/gi, '')
@@ -89,6 +99,7 @@ function seedEmails(): InboxEmail[] {
     {
       id: 'em-001',
       unread: true,
+      status: 'Pending',
       fromName: 'Acme Corp Pvt Ltd',
       fromEmail: 'ap@acme-corp.in',
       toEmail: 'invoice.receivable@qbadvisory.com',
@@ -102,6 +113,7 @@ function seedEmails(): InboxEmail[] {
     {
       id: 'em-002',
       unread: false,
+      status: 'Processed',
       fromName: 'Nova Retail LLP',
       fromEmail: 'procurement@novaretail.com',
       toEmail: 'invoice.receivable@qbadvisory.com',
@@ -115,6 +127,7 @@ function seedEmails(): InboxEmail[] {
     {
       id: 'em-003',
       unread: true,
+      status: 'Pending',
       fromName: 'Zenith Distributors',
       fromEmail: 'contracts@zenithdist.com',
       toEmail: 'invoice.receivable@qbadvisory.com',
@@ -128,6 +141,7 @@ function seedEmails(): InboxEmail[] {
     {
       id: 'em-004',
       unread: false,
+      status: 'Processed',
       fromName: 'Acme Corp Pvt Ltd',
       fromEmail: 'procurement@acme-corp.in',
       toEmail: 'invoice.receivable@qbadvisory.com',
@@ -141,6 +155,7 @@ function seedEmails(): InboxEmail[] {
     {
       id: 'em-005',
       unread: false,
+      status: 'Pending',
       fromName: 'Nova Retail LLP',
       fromEmail: 'ap@novaretail.com',
       toEmail: 'invoice.receivable@qbadvisory.com',
@@ -154,6 +169,7 @@ function seedEmails(): InboxEmail[] {
     {
       id: 'em-006',
       unread: false,
+      status: 'Pending',
       fromName: 'Zenith Distributors',
       fromEmail: 'contracts@zenithdist.com',
       toEmail: 'invoice.receivable@qbadvisory.com',
@@ -167,6 +183,7 @@ function seedEmails(): InboxEmail[] {
     {
       id: 'em-007',
       unread: true,
+      status: 'Pending',
       fromName: 'Acme Corp Pvt Ltd',
       fromEmail: 'procurement@acme-corp.in',
       toEmail: 'invoice.receivable@qbadvisory.com',
@@ -180,6 +197,7 @@ function seedEmails(): InboxEmail[] {
     {
       id: 'em-008',
       unread: false,
+      status: 'Pending',
       fromName: 'Nova Retail LLP',
       fromEmail: 'contracts@novaretail.com',
       toEmail: 'invoice.receivable@qbadvisory.com',
@@ -193,6 +211,7 @@ function seedEmails(): InboxEmail[] {
     {
       id: 'em-009',
       unread: false,
+      status: 'Processed',
       fromName: 'Zenith Distributors',
       fromEmail: 'ap@zenithdist.com',
       toEmail: 'invoice.receivable@qbadvisory.com',
@@ -206,6 +225,7 @@ function seedEmails(): InboxEmail[] {
     {
       id: 'em-010',
       unread: false,
+      status: 'Pending',
       fromName: 'Acme Corp Pvt Ltd',
       fromEmail: 'legal@acme-corp.in',
       toEmail: 'invoice.receivable@qbadvisory.com',
@@ -217,6 +237,18 @@ function seedEmails(): InboxEmail[] {
         '<p>Hi,</p><p>Sharing clarification on payment milestones. Please ensure Billing Agent aligns invoice schedule accordingly.</p><p>Regards,<br/>Acme Legal</p>',
     },
   ]
+}
+
+function statusVariant(s: InboxEmail['status']): React.ComponentProps<typeof Badge>['variant'] {
+  if (s === 'Processed') return 'green'
+  if (s === 'Quarantined') return 'red'
+  return 'yellow'
+}
+
+function classificationFor(email: InboxEmail) {
+  const t = email.tags.includes('PO') ? 'PO' : 'SOW'
+  const confidence = t === 'PO' ? 0.93 : 0.94
+  return { docType: t, confidence }
 }
 
 export default function EmailInboxPage() {
@@ -260,8 +292,22 @@ export default function EmailInboxPage() {
 
   const markProcessed = () => {
     if (!selected) return
-    setEmails((prev) => prev.map((e) => (e.id === selected.id ? { ...e, unread: false } : e)))
+    setEmails((prev) => prev.map((e) => (e.id === selected.id ? { ...e, unread: false, status: 'Processed' } : e)))
     toast.success('Marked as processed')
+  }
+
+  const quarantine = () => {
+    if (!selected) return
+    setEmails((prev) => prev.map((e) => (e.id === selected.id ? { ...e, status: 'Quarantined' } : e)))
+    toast.error('Quarantined', { description: 'Email flagged for security review' })
+  }
+
+  const processSelected = () => {
+    if (!selected) return
+    const suffix = Number(selected.id.replace(/\D/g, '').slice(-3) || '0')
+    const createdCaseId = selected.createdCaseId ?? `AR-${yyyymmdd(new Date())}-${String(8000 + suffix).padStart(4, '0')}`
+    setEmails((prev) => prev.map((e) => (e.id === selected.id ? { ...e, unread: false, status: 'Processed', createdCaseId } : e)))
+    toast.success('Processed', { description: `Case created: ${createdCaseId}` })
   }
 
   const triggerIntake = () => {
@@ -278,9 +324,11 @@ export default function EmailInboxPage() {
 
   return (
     <div className="space-y-6">
-      <PageHeader title="Email Inbox" subtitle="O365 Outlook Listener • invoice.receivable@qbadvisory.com" />
+      <div data-tour="email-header">
+        <PageHeader title="Email Inbox" subtitle="Intake Email Monitoring • 2 inboxes • invoice.receivable@qbadvisory.com" />
+      </div>
 
-      <Card>
+      <Card data-tour="email-toolbar">
         <CardContent className="pt-5">
           <div className="flex flex-col gap-3 xl:flex-row xl:items-center xl:justify-between">
             <div className="flex flex-wrap items-center gap-2">
@@ -289,13 +337,32 @@ export default function EmailInboxPage() {
               <div className="rounded-full bg-slate-100 px-3 py-1.5 text-xs font-semibold text-slate-700 dark:bg-slate-900 dark:text-slate-300">
                 {unreadCount} unread
               </div>
+              <div data-tour="email-agent-health" className="flex flex-wrap items-center gap-2">
+                <Button asChild variant="secondary" size="sm">
+                  <Link to="/agent-console">View Intake Agent Health</Link>
+                </Button>
+              </div>
             </div>
 
             <div className="flex flex-1 flex-col gap-2 xl:flex-row xl:items-center xl:justify-end">
-              <Button variant="secondary" onClick={refresh}>
-                <RefreshCw className="mr-2 h-4 w-4" />
-                Refresh
-              </Button>
+              <div data-tour="email-actions" className="flex flex-wrap items-center gap-2">
+                <Button variant="primary" onClick={processSelected} disabled={!selected}>
+                  <Sparkles className="mr-2 h-4 w-4" />
+                  Process Selected Email
+                </Button>
+                <Button variant="secondary" onClick={() => toast.message('Manual upload', { description: 'Upload flow connects here.' })}>
+                  <Upload className="mr-2 h-4 w-4" />
+                  Manual Upload
+                </Button>
+                <Button variant="secondary" onClick={quarantine} disabled={!selected}>
+                  <ShieldAlert className="mr-2 h-4 w-4" />
+                  Quarantine
+                </Button>
+                <Button variant="secondary" onClick={refresh}>
+                  <RefreshCw className="mr-2 h-4 w-4" />
+                  Refresh
+                </Button>
+              </div>
 
               <div className="relative w-full xl:max-w-[640px]">
                 <Search className="pointer-events-none absolute left-3 top-3 h-4 w-4 text-slate-400" />
@@ -336,11 +403,41 @@ export default function EmailInboxPage() {
       </Card>
 
       <div className="flex flex-col gap-4 xl:flex-row xl:items-stretch">
-        <Card className="xl:w-[380px]">
+        <Card data-tour="email-list" className="xl:w-[380px]">
           <CardHeader>
             <CardTitle>Inbox</CardTitle>
           </CardHeader>
           <CardContent className="min-h-0">
+            <div data-tour="email-inboxes" className="mb-3 rounded-2xl bg-slate-50 px-3 py-3 text-sm text-slate-600 ring-1 ring-slate-200/60 dark:bg-slate-900 dark:text-slate-400 dark:ring-slate-800/70">
+              <div className="text-xs font-semibold uppercase tracking-wide text-slate-500 dark:text-slate-400">Monitored Inboxes</div>
+              <div className="mt-2 space-y-2">
+                {[
+                  { name: 'invoice.receivable@qbadvisory.com', status: 'Connected', checked: '1 min ago', newCount: unreadCount },
+                  { name: 'ar.intake@qbadvisory.com', status: 'Connected', checked: '3 min ago', newCount: Math.max(0, unreadCount - 1) },
+                ].map((x) => (
+                  <div key={x.name} className="flex items-center justify-between gap-3 rounded-xl bg-white px-3 py-2 ring-1 ring-slate-200/60 dark:bg-slate-950 dark:ring-slate-800/70">
+                    <div className="min-w-0">
+                      <div className="truncate font-semibold text-slate-900 dark:text-slate-50">{x.name}</div>
+                      <div className="mt-0.5 text-xs text-slate-500 dark:text-slate-400">Last checked: {x.checked}</div>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <Badge variant="green">{x.status}</Badge>
+                      <Badge variant="neutral">{x.newCount}</Badge>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+
+            <div className="mb-2 rounded-2xl bg-white px-3 py-2 text-xs font-semibold uppercase tracking-wide text-slate-500 ring-1 ring-slate-200/60 dark:bg-slate-950 dark:text-slate-400 dark:ring-slate-800/70">
+              <div className="flex items-center justify-between gap-2">
+                <span data-tour="email-col-sender">Sender</span>
+                <span data-tour="email-col-subject">Subject</span>
+                <span data-tour="email-col-attachments">Attachments</span>
+                <span data-tour="email-col-received">Received At</span>
+                <span data-tour="email-col-status">Status</span>
+              </div>
+            </div>
             <div className="no-scrollbar max-h-[560px] space-y-2 overflow-y-auto xl:max-h-[calc(100vh-340px)]">
               {filtered.map((e) => {
                 const snippet = stripHtml(e.bodyHtml)
@@ -376,7 +473,12 @@ export default function EmailInboxPage() {
                             {e.subject}
                           </div>
                         </div>
-                        <div className="shrink-0 text-xs font-medium text-slate-500 dark:text-slate-400">{formatDateTime(e.receivedAt)}</div>
+                        <div className="shrink-0 text-right">
+                          <div className="text-xs font-medium text-slate-500 dark:text-slate-400">{formatDateTime(e.receivedAt)}</div>
+                          <div className="mt-1 flex justify-end">
+                            <Badge variant={statusVariant(e.status)}>{e.status}</Badge>
+                          </div>
+                        </div>
                       </div>
 
                       <div className="mt-2 flex items-center justify-between gap-3">
@@ -406,7 +508,7 @@ export default function EmailInboxPage() {
           </CardContent>
         </Card>
 
-        <Card className="min-w-0 flex-1">
+        <Card data-tour="email-preview" className="min-w-0 flex-1">
           <CardHeader>
             <div className="flex flex-wrap items-start justify-between gap-3">
               <div className="min-w-0">
@@ -418,6 +520,28 @@ export default function EmailInboxPage() {
           <CardContent className="min-h-0">
             {selected ? (
               <div className="flex min-h-0 flex-col gap-4">
+                <div data-tour="email-security" className="rounded-2xl bg-white p-4 ring-1 ring-slate-200/60 dark:bg-slate-950 dark:ring-slate-800/70">
+                  <div className="flex flex-wrap items-center justify-between gap-3">
+                    <div className="text-xs font-semibold uppercase tracking-wide text-slate-400">Malware Scan & Security</div>
+                    <Badge variant={selected.status === 'Quarantined' ? 'red' : 'green'}>{selected.status === 'Quarantined' ? 'Quarantined' : 'Clean'}</Badge>
+                  </div>
+                  <div className="mt-2 space-y-2 text-sm text-slate-600 dark:text-slate-400">
+                    <div className="flex items-center justify-between rounded-xl bg-slate-50 px-3 py-2 dark:bg-slate-900">
+                      <span>Attachment scan</span>
+                      <span className="inline-flex items-center gap-2 font-semibold text-slate-900 dark:text-slate-50">
+                        {selected.status === 'Quarantined' ? <ShieldAlert className="h-4 w-4 text-rose-500" /> : <ShieldCheck className="h-4 w-4 text-emerald-500" />}
+                        {selected.status === 'Quarantined' ? 'Flagged' : 'Passed'}
+                      </span>
+                    </div>
+                    <div className="flex items-center justify-between rounded-xl bg-slate-50 px-3 py-2 dark:bg-slate-900">
+                      <span>Routing</span>
+                      <span className="font-semibold text-slate-900 dark:text-slate-50">
+                        {selected.status === 'Quarantined' ? 'Security Review' : 'Contract Intelligence'}
+                      </span>
+                    </div>
+                  </div>
+                </div>
+
                 <div className="rounded-2xl bg-slate-50 p-4 ring-1 ring-slate-200/60 dark:bg-slate-900 dark:ring-slate-800/70">
                   <div className="flex flex-wrap items-start justify-between gap-3">
                     <div className="min-w-0">
@@ -455,10 +579,16 @@ export default function EmailInboxPage() {
                   />
                 </div>
 
-                <div className="rounded-2xl bg-white p-4 ring-1 ring-slate-200/60 dark:bg-slate-950 dark:ring-slate-800/70">
+                <div data-tour="email-attachments" className="rounded-2xl bg-white p-4 ring-1 ring-slate-200/60 dark:bg-slate-950 dark:ring-slate-800/70">
                   <div className="flex flex-wrap items-center justify-between gap-3">
                     <div className="text-xs font-semibold uppercase tracking-wide text-slate-400">Attachments</div>
                     <div className="text-sm font-medium text-slate-600 dark:text-slate-400">{selected.attachments.length ? `${selected.attachments.length} file(s)` : 'None'}</div>
+                  </div>
+                  <div className="mt-2 flex flex-wrap items-center justify-between gap-2 rounded-xl bg-slate-50 px-3 py-2 text-sm text-slate-600 dark:bg-slate-900 dark:text-slate-400">
+                    <div className="font-medium">
+                      Classification: {classificationFor(selected).docType} • Confidence: {(classificationFor(selected).confidence * 100).toFixed(0)}%
+                    </div>
+                    <Badge variant={selected.status === 'Quarantined' ? 'red' : 'green'}>{selected.status === 'Quarantined' ? 'Blocked' : 'Ready'}</Badge>
                   </div>
 
                   {selected.attachments.length ? (
@@ -472,6 +602,17 @@ export default function EmailInboxPage() {
                             <div className="min-w-0 flex-1">
                               <div className="truncate text-sm font-semibold text-slate-900 dark:text-slate-50">{a.fileName}</div>
                               <div className="mt-1 text-sm text-slate-600 dark:text-slate-400">{a.sizeKb} KB • PDF</div>
+                              <div className="mt-2 flex flex-wrap items-center gap-2 text-xs font-semibold text-slate-600 dark:text-slate-400">
+                                <span className="rounded-full bg-white px-2 py-1 ring-1 ring-slate-200/60 dark:bg-slate-950 dark:ring-slate-800/70">
+                                  {classificationFor(selected).docType}
+                                </span>
+                                <span className="rounded-full bg-white px-2 py-1 ring-1 ring-slate-200/60 dark:bg-slate-950 dark:ring-slate-800/70">
+                                  {(classificationFor(selected).confidence * 100).toFixed(0)}% conf
+                                </span>
+                                <span className="rounded-full bg-white px-2 py-1 ring-1 ring-slate-200/60 dark:bg-slate-950 dark:ring-slate-800/70">
+                                  {selected.status === 'Quarantined' ? 'Scan flagged' : 'Scan clean'}
+                                </span>
+                              </div>
                             </div>
                           </div>
                           <div className="mt-3 flex flex-wrap items-center gap-2">
@@ -496,6 +637,22 @@ export default function EmailInboxPage() {
                   ) : (
                     <div className="mt-3 rounded-xl bg-slate-50 p-3 text-sm text-slate-600 dark:bg-slate-900 dark:text-slate-400">No attachments found for this email.</div>
                   )}
+                </div>
+
+                <div data-tour="email-case" className="rounded-2xl bg-white p-4 ring-1 ring-slate-200/60 dark:bg-slate-950 dark:ring-slate-800/70">
+                  <div className="text-xs font-semibold uppercase tracking-wide text-slate-400">Case Creation Status</div>
+                  <div className="mt-2 text-sm text-slate-600 dark:text-slate-400">
+                    {selected.createdCaseId ? (
+                      <span className="inline-flex items-center gap-2">
+                        Created Case:{' '}
+                        <Link className="font-semibold text-qa-primary underline-offset-2 hover:underline" to={`/cases/${selected.createdCaseId}`}>
+                          {selected.createdCaseId}
+                        </Link>
+                      </span>
+                    ) : (
+                      'No case created yet. Process this email to create a Case ID and start the 10-step Agentic flow.'
+                    )}
+                  </div>
                 </div>
 
                 <div className="sticky bottom-2 rounded-2xl bg-white p-3 shadow-card ring-1 ring-slate-200/60 dark:bg-slate-950 dark:ring-slate-800/70">
@@ -528,6 +685,8 @@ export default function EmailInboxPage() {
           </CardContent>
         </Card>
       </div>
+
+      <EmailInboxTour />
     </div>
   )
 }

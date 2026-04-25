@@ -468,6 +468,10 @@ export function AppLayout() {
                                           ? 'console'
                                           : pathname.startsWith('/configuration')
                                             ? 'config'
+                                            : pathname.startsWith('/reports')
+                                              ? 'reports'
+                                              : pathname.startsWith('/email-inbox')
+                                                ? 'email'
                                   : pathname.startsWith('/cases/') && pathname !== '/cases'
                                     ? 'case'
                                     : pathname.startsWith('/cases')
