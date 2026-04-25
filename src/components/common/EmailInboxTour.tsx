@@ -105,9 +105,21 @@ export function EmailInboxTour() {
           {
             id: 'header',
             selector: '[data-tour="email-header"]',
-            title: 'Email Inbox (Intake Agent Entry Point)',
+            title: 'Email Inbox',
             body:
-              'Welcome to the Email Inbox — the entry point of the Agentic AI AR process. The Intake Agent continuously monitors configured email inboxes for incoming SOWs, POs, and supporting documents.',
+              'Welcome to the Email Inbox — the entry point of the Agentic AI AR process. This header confirms you are connected, listening live, and shows last sync and unread volume at a glance.',
+          },
+        ],
+      },
+      {
+        id: 'toolbar',
+        subSteps: [
+          {
+            id: 'toolbar',
+            selector: '[data-tour="email-actions"]',
+            title: 'Top Action Toolbar',
+            body:
+              'This clean toolbar gives you fast control when you want to intervene: Process Selected Email (prominent), Manual Upload for supplemental docs, Quarantine for suspicious items, and Refresh to sync instantly.',
           },
         ],
       },
@@ -117,9 +129,9 @@ export function EmailInboxTour() {
           {
             id: 'inboxes',
             selector: '[data-tour="email-inboxes"]',
-            title: 'Monitored Inboxes Summary',
+            title: 'Monitored Inbox',
             body:
-              'These are the live email inboxes monitored by the Intake Agent. Each inbox shows connection status, last checked time, and how many new emails are waiting to be processed.',
+              'This inbox is continuously monitored by the Intake Agent: invoice.receivable@qbadvisory.com. New emails flow into classification and case creation with minimal human touch for standard documents.',
           },
         ],
       },
@@ -129,9 +141,9 @@ export function EmailInboxTour() {
           {
             id: 'list',
             selector: '[data-tour="email-list"]',
-            title: 'Email List',
+            title: 'Email List / Inbox Table',
             body:
-              'This list displays incoming emails across monitored inboxes. Every row shows sender, subject, received time, attachments, and processing status before the email becomes a case in the 10-step Agentic flow.',
+              'This is your live intake queue. Each row shows sender, subject, received timestamp, attachments, and status so you can instantly see what is pending, processed, or quarantined.',
           },
         ],
       },
@@ -143,35 +155,35 @@ export function EmailInboxTour() {
             selector: '[data-tour="email-col-sender"]',
             title: 'Sender',
             body:
-              'Sender information helps the Intake Agent apply routing rules and customer matching logic. It also supports security policies and quarantine workflows.',
+              'Sender identity supports customer matching and routing. It helps the system connect documents to the right customer record before downstream agents execute.',
           },
           {
             id: 'subject',
             selector: '[data-tour="email-col-subject"]',
             title: 'Subject',
             body:
-              'Subjects often carry key metadata like PO numbers, SOW versions, and urgency. The agent uses this to improve classification and accelerate downstream processing.',
+              'Subjects often contain document hints like PO numbers, SOW versions, or urgency. The Intake Agent uses this to improve classification and accelerate processing.',
           },
           {
             id: 'attachments',
             selector: '[data-tour="email-col-attachments"]',
             title: 'Attachments',
             body:
-              'Attachments are automatically extracted and scanned for malware. Safe PDFs are routed to the Contract Intelligence Agent for structured extraction.',
+              'Attachments are extracted and packaged for downstream processing. High-quality PDFs and structured docs route into Contract Intelligence for rapid data extraction.',
           },
           {
             id: 'received',
             selector: '[data-tour="email-col-received"]',
             title: 'Received At',
             body:
-              'Timestamps feed SLA timers and escalation rules. This ensures high-value or urgent documents never sit unprocessed beyond acceptable limits.',
+              'Timestamps drive SLA monitoring and escalation logic, ensuring nothing sits unprocessed beyond acceptable limits.',
           },
           {
             id: 'status',
             selector: '[data-tour="email-col-status"]',
             title: 'Status',
             body:
-              'Status shows whether the email is pending, processed, or quarantined. Quarantine is used for security-first handling before any downstream processing begins.',
+              'Status shows whether an item is pending, processed, or quarantined. Quarantine keeps exceptions controlled while standard emails remain zero-touch.',
           },
         ],
       },
@@ -181,9 +193,9 @@ export function EmailInboxTour() {
           {
             id: 'preview',
             selector: '[data-tour="email-preview"]',
-            title: 'Email Preview Pane',
+            title: 'Email Details / Preview Pane',
             body:
-              'Clicking an email opens the preview with full message body, attachments, and metadata. This is where initial classification and security checks are surfaced before case creation.',
+              'Selecting an email opens the preview with full metadata and body content. This is the operator view for reviewing context before you trigger processing or create a case.',
           },
         ],
       },
@@ -193,57 +205,21 @@ export function EmailInboxTour() {
           {
             id: 'attachments',
             selector: '[data-tour="email-attachments"]',
-            title: 'Attachments & Document Classification',
+            title: 'Attachment List & Classification',
             body:
-              'The system automatically classifies attachments as SOW or PO and shows confidence. High-confidence documents stay zero-touch; ambiguous ones can route into HITL review.',
+              'Attachments are classified (SOW/PO) with confidence. High-confidence items proceed automatically into the 10-step Agentic flow; ambiguous cases can be routed to HITL for verification.',
           },
         ],
       },
       {
-        id: 'actions',
+        id: 'preview-actions',
         subSteps: [
           {
-            id: 'actions',
-            selector: '[data-tour="email-actions"]',
+            id: 'preview-actions',
+            selector: '[data-tour="email-preview-actions"]',
             title: 'Quick Actions',
             body:
-              'These controls let you manually trigger processing, upload additional documents, refresh inbox state, or quarantine suspicious emails. In production, the Intake Agent runs this continuously with minimal human touch.',
-          },
-        ],
-      },
-      {
-        id: 'security',
-        subSteps: [
-          {
-            id: 'security',
-            selector: '[data-tour="email-security"]',
-            title: 'Malware Scan & Security Status',
-            body:
-              'Every attachment is scanned for malware before processing begins. Safe documents route to extraction immediately; flagged items are quarantined for security review.',
-          },
-        ],
-      },
-      {
-        id: 'case',
-        subSteps: [
-          {
-            id: 'case',
-            selector: '[data-tour="email-case"]',
-            title: 'Case Creation Status',
-            body:
-              'Once processed, the email is converted into a Case ID (e.g., AR-20260424-XXXX). Click the Case ID to jump directly into the full Case Detail timeline.',
-          },
-        ],
-      },
-      {
-        id: 'health',
-        subSteps: [
-          {
-            id: 'health',
-            selector: '[data-tour="email-agent-health"]',
-            title: 'Auto-Refresh & Intake Agent Health',
-            body:
-              'The inbox stays fresh so new emails are ingested quickly. You can jump into the Agent Console to monitor the Intake Agent queue, processing time, and any exceptions requiring attention.',
+              'Use these buttons to trigger the next action immediately: send the email into the pipeline, create a new case, mark processed, or archive/forward. Every intervention is captured for audit.',
           },
         ],
       },
@@ -253,9 +229,9 @@ export function EmailInboxTour() {
           {
             id: 'wrap',
             selector: '[data-tour="email-header"]',
-            title: 'Secure, Zero-Touch Intake',
+            title: 'All Set',
             body:
-              'You now understand how intake works end-to-end: monitoring, classification, malware scanning, and fast case creation. From here, the transaction flows automatically through the full 10-step Agentic AR process.',
+              'Excellent! You’ve seen how the Email Inbox supports a clean intake workflow: live monitoring, fast classification, and one-click actions. Standard cases stay zero-touch while exceptions are handled deliberately and auditable.',
           },
         ],
       },
@@ -599,4 +575,3 @@ export function EmailInboxTour() {
 
   return createPortal(overlay, document.body)
 }
-

@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from 'react'
-import { Archive, Download, FileText, Forward, Mail, Paperclip, RefreshCw, Search, ShieldAlert, ShieldCheck, Sparkles, Upload } from 'lucide-react'
+import { Archive, Download, FileText, Forward, Mail, Paperclip, RefreshCw, Search, ShieldAlert, Sparkles, Upload } from 'lucide-react'
 import { Link, useNavigate } from 'react-router-dom'
 
 import { PageHeader } from '@/components/common/PageHeader'
@@ -326,53 +326,33 @@ export default function EmailInboxPage() {
   return (
     <div className="space-y-6">
       <div data-tour="email-header">
-        <PageHeader title="Email Inbox" subtitle="Intake Email Monitoring • 2 inboxes • invoice.receivable@qbadvisory.com" />
-      </div>
-
-      <Card data-tour="email-toolbar">
-        <CardContent className="pt-5">
-          <div className="flex flex-col gap-3 xl:flex-row xl:items-center xl:justify-between">
-            <div className="flex flex-wrap items-center gap-2">
+        <PageHeader
+          title="Email Inbox"
+          subtitle="Intake Email Monitoring • invoice.receivable@qbadvisory.com"
+          rightSlot={
+            <div className="flex flex-wrap items-center gap-2" data-tour="email-header-status">
               <Badge variant="green">Connected • Listening live</Badge>
               <div className="text-sm font-medium text-slate-600 dark:text-slate-400">Last synced: {formatAgo(lastSyncedAt, now)}</div>
               <div className="rounded-full bg-slate-100 px-3 py-1.5 text-xs font-semibold text-slate-700 dark:bg-slate-900 dark:text-slate-300">
                 {unreadCount} unread
               </div>
-              <div data-tour="email-agent-health" className="flex flex-wrap items-center gap-2">
-                <Button asChild variant="secondary" size="sm">
-                  <Link to="/agent-console">View Intake Agent Health</Link>
-                </Button>
-              </div>
             </div>
+          }
+        />
+      </div>
 
-            <div className="flex flex-1 flex-col gap-2 xl:flex-row xl:items-center xl:justify-end">
-              <div data-tour="email-actions" className="flex flex-wrap items-center gap-2">
-                <Button variant="primary" onClick={processSelected} disabled={!selected}>
-                  <Sparkles className="mr-2 h-4 w-4" />
-                  Process Selected Email
-                </Button>
-                <Button variant="secondary" onClick={() => toast.message('Manual upload', { description: 'Upload flow connects here.' })}>
-                  <Upload className="mr-2 h-4 w-4" />
-                  Manual Upload
-                </Button>
-                <Button variant="secondary" onClick={quarantine} disabled={!selected}>
-                  <ShieldAlert className="mr-2 h-4 w-4" />
-                  Quarantine
-                </Button>
-                <Button variant="secondary" onClick={refresh}>
-                  <RefreshCw className="mr-2 h-4 w-4" />
-                  Refresh
-                </Button>
-              </div>
-
-              <div className="relative w-full xl:max-w-[640px]">
+      <Card data-tour="email-toolbar">
+        <CardContent className="pt-5">
+          <div className="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
+            <div className="flex flex-1 flex-col gap-2 lg:flex-row lg:items-center">
+              <div className="relative w-full lg:max-w-[640px]">
                 <Search className="pointer-events-none absolute left-3 top-3 h-4 w-4 text-slate-400" />
                 <Input value={query} onChange={(e) => setQuery(e.target.value)} className="pl-9" placeholder="Search sender, subject, body…" />
               </div>
 
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>
-                  <Button variant="secondary" className="justify-between xl:min-w-[220px]">
+                  <Button variant="secondary" className="justify-between lg:min-w-[220px]">
                     Filter: {filter}
                     <span className="ml-2 text-slate-500">▾</span>
                   </Button>
@@ -399,6 +379,27 @@ export default function EmailInboxPage() {
                 </DropdownMenuContent>
               </DropdownMenu>
             </div>
+
+            <div data-tour="email-actions" className="flex flex-wrap items-center justify-end gap-2">
+              <Button variant="primary" size="md" onClick={processSelected} disabled={!selected}>
+                <Sparkles className="mr-2 h-4 w-4" />
+                Process Selected Email
+              </Button>
+              <div className="flex flex-wrap items-center gap-2">
+                <Button size="sm" variant="secondary" onClick={() => toast.message('Manual upload', { description: 'Upload flow connects here.' })}>
+                  <Upload className="mr-2 h-4 w-4" />
+                  Manual Upload
+                </Button>
+                <Button size="sm" variant="secondary" onClick={quarantine} disabled={!selected}>
+                  <ShieldAlert className="mr-2 h-4 w-4" />
+                  Quarantine
+                </Button>
+                <Button size="sm" variant="secondary" onClick={refresh}>
+                  <RefreshCw className="mr-2 h-4 w-4" />
+                  Refresh
+                </Button>
+              </div>
+            </div>
           </div>
         </CardContent>
       </Card>
@@ -412,10 +413,7 @@ export default function EmailInboxPage() {
             <div data-tour="email-inboxes" className="mb-3 rounded-2xl bg-slate-50 px-3 py-3 text-sm text-slate-600 ring-1 ring-slate-200/60 dark:bg-slate-900 dark:text-slate-400 dark:ring-slate-800/70">
               <div className="text-xs font-semibold uppercase tracking-wide text-slate-500 dark:text-slate-400">Monitored Inboxes</div>
               <div className="mt-2 space-y-2">
-                {[
-                  { name: 'invoice.receivable@qbadvisory.com', status: 'Connected', checked: '1 min ago', newCount: unreadCount },
-                  { name: 'ar.intake@qbadvisory.com', status: 'Connected', checked: '3 min ago', newCount: Math.max(0, unreadCount - 1) },
-                ].map((x) => (
+                {[{ name: 'invoice.receivable@qbadvisory.com', status: 'Connected', checked: '1 min ago', newCount: unreadCount }].map((x) => (
                   <div key={x.name} className="flex items-center justify-between gap-3 rounded-xl bg-white px-3 py-2 ring-1 ring-slate-200/60 dark:bg-slate-950 dark:ring-slate-800/70">
                     <div className="min-w-0">
                       <div className="truncate font-semibold text-slate-900 dark:text-slate-50">{x.name}</div>
@@ -521,28 +519,6 @@ export default function EmailInboxPage() {
           <CardContent className="min-h-0">
             {selected ? (
               <div className="flex min-h-0 flex-col gap-4">
-                <div data-tour="email-security" className="rounded-2xl bg-white p-4 ring-1 ring-slate-200/60 dark:bg-slate-950 dark:ring-slate-800/70">
-                  <div className="flex flex-wrap items-center justify-between gap-3">
-                    <div className="text-xs font-semibold uppercase tracking-wide text-slate-400">Malware Scan & Security</div>
-                    <Badge variant={selected.status === 'Quarantined' ? 'red' : 'green'}>{selected.status === 'Quarantined' ? 'Quarantined' : 'Clean'}</Badge>
-                  </div>
-                  <div className="mt-2 space-y-2 text-sm text-slate-600 dark:text-slate-400">
-                    <div className="flex items-center justify-between rounded-xl bg-slate-50 px-3 py-2 dark:bg-slate-900">
-                      <span>Attachment scan</span>
-                      <span className="inline-flex items-center gap-2 font-semibold text-slate-900 dark:text-slate-50">
-                        {selected.status === 'Quarantined' ? <ShieldAlert className="h-4 w-4 text-rose-500" /> : <ShieldCheck className="h-4 w-4 text-emerald-500" />}
-                        {selected.status === 'Quarantined' ? 'Flagged' : 'Passed'}
-                      </span>
-                    </div>
-                    <div className="flex items-center justify-between rounded-xl bg-slate-50 px-3 py-2 dark:bg-slate-900">
-                      <span>Routing</span>
-                      <span className="font-semibold text-slate-900 dark:text-slate-50">
-                        {selected.status === 'Quarantined' ? 'Security Review' : 'Contract Intelligence'}
-                      </span>
-                    </div>
-                  </div>
-                </div>
-
                 <div className="rounded-2xl bg-slate-50 p-4 ring-1 ring-slate-200/60 dark:bg-slate-900 dark:ring-slate-800/70">
                   <div className="flex flex-wrap items-start justify-between gap-3">
                     <div className="min-w-0">
@@ -610,9 +586,6 @@ export default function EmailInboxPage() {
                                 <span className="rounded-full bg-white px-2 py-1 ring-1 ring-slate-200/60 dark:bg-slate-950 dark:ring-slate-800/70">
                                   {(classificationFor(selected).confidence * 100).toFixed(0)}% conf
                                 </span>
-                                <span className="rounded-full bg-white px-2 py-1 ring-1 ring-slate-200/60 dark:bg-slate-950 dark:ring-slate-800/70">
-                                  {selected.status === 'Quarantined' ? 'Scan flagged' : 'Scan clean'}
-                                </span>
                               </div>
                             </div>
                           </div>
@@ -664,7 +637,7 @@ export default function EmailInboxPage() {
                   </div>
                 </div>
 
-                <div className="sticky bottom-2 rounded-2xl bg-white p-3 shadow-card ring-1 ring-slate-200/60 dark:bg-slate-950 dark:ring-slate-800/70">
+                <div data-tour="email-preview-actions" className="sticky bottom-2 rounded-2xl bg-white p-3 shadow-card ring-1 ring-slate-200/60 dark:bg-slate-950 dark:ring-slate-800/70">
                   <div className="flex flex-wrap items-center justify-between gap-2">
                     <Button variant="primary" onClick={triggerIntake}>
                       Trigger Intake Agent
