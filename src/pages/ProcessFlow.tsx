@@ -43,36 +43,6 @@ function kindStyles(kind: NodeKind) {
   return { fill: '#22c55e', stroke: '#16a34a', text: '#0f172a' }
 }
 
-function edgePath(a: FlowNode, b: FlowNode) {
-  const acx = a.x + a.w / 2
-  const acy = a.y + a.h / 2
-  const bcx = b.x + b.w / 2
-  const bcy = b.y + b.h / 2
-  const dx = bcx - acx
-  const dy = bcy - acy
-
-  const horizontal = Math.abs(dx) >= Math.abs(dy)
-  const signX = dx >= 0 ? 1 : -1
-  const signY = dy >= 0 ? 1 : -1
-
-  const start = horizontal
-    ? { x: signX > 0 ? a.x + a.w : a.x, y: acy }
-    : { x: acx, y: signY > 0 ? a.y + a.h : a.y }
-  const end = horizontal
-    ? { x: signX > 0 ? b.x : b.x + b.w, y: bcy }
-    : { x: bcx, y: signY > 0 ? b.y : b.y + b.h }
-
-  const bend = horizontal ? Math.min(190, Math.max(90, Math.abs(dx) * 0.45)) : Math.min(190, Math.max(90, Math.abs(dy) * 0.45))
-
-  const c1 = horizontal ? { x: start.x + bend * signX, y: start.y } : { x: start.x, y: start.y + bend * signY }
-  const c2 = horizontal ? { x: end.x - bend * signX, y: end.y } : { x: end.x, y: end.y - bend * signY }
-
-  return {
-    d: `M ${start.x} ${start.y} C ${c1.x} ${c1.y}, ${c2.x} ${c2.y}, ${end.x} ${end.y}`,
-    mid: { x: (start.x + end.x) / 2, y: (start.y + end.y) / 2 },
-  }
-}
-
 type RoutedEdge = {
   d: string
   labelPos?: { x: number; y: number; anchor?: 'start' | 'middle' | 'end' }
