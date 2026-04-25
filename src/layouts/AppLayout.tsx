@@ -181,10 +181,7 @@ export function AppLayout() {
     )
 
   const agentPills = useMemo(() => agents.slice(0, 6), [agents])
-  const navItems = useMemo(() => {
-    if (user.role !== 'Admin') return sidebarItems.filter((x) => x.to !== '/configuration')
-    return sidebarItems
-  }, [user.role])
+  const navItems = useMemo(() => sidebarItems, [])
 
   const d365BadgeVariant: React.ComponentProps<typeof Badge>['variant'] =
     d365.state === 'connected' ? 'green' : d365.state === 'degraded' ? 'yellow' : 'red'
