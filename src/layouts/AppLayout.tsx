@@ -447,7 +447,14 @@ export function AppLayout() {
                     onClick={() => {
                       const params = new URLSearchParams(location.search)
                       const pathname = location.pathname
-                      const tour = pathname.startsWith('/pipeline') ? 'pipeline' : pathname.startsWith('/cases') ? 'cases' : '1'
+                      const tour =
+                        pathname.startsWith('/pipeline')
+                          ? 'pipeline'
+                          : pathname.startsWith('/cases/') && pathname !== '/cases'
+                            ? 'case'
+                            : pathname.startsWith('/cases')
+                              ? 'cases'
+                              : '1'
                       params.set('tour', tour)
                       navigate(`${pathname}?${params.toString()}`)
                     }}

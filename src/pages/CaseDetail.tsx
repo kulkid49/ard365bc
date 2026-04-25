@@ -6,6 +6,7 @@ import { toast } from 'sonner'
 
 import { getAgenticCases, getAuditEvents, getCaseDocuments } from '@/api/mockApi'
 import { PageHeader } from '@/components/common/PageHeader'
+import { CaseDetailTour } from '@/components/common/CaseDetailTour'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
@@ -74,6 +75,7 @@ export default function CaseDetailPage() {
   const caseEvents = useMemo(() => events.filter((e) => e.caseId === (found?.caseId ?? '')).slice(0, 22), [events, found?.caseId])
 
   const [comment, setComment] = useState('Reviewed and approved for continuation.')
+  const [tab, setTab] = useState('documents')
 
   return (
     <div className="space-y-6">
@@ -87,6 +89,7 @@ export default function CaseDetailPage() {
           { label: 'Escalate', variant: 'secondary', onClick: () => toast.message('Escalated') },
           { label: 'Export Full Case Package', variant: 'secondary', onClick: () => toast.message('Export queued') },
         ]}
+        actionsDataTour="case-quick-actions"
         rightSlot={
           <Button variant="ghost" onClick={() => toast.success('Refreshed')}>
             <RefreshCcw className="mr-2 h-4 w-4" />
@@ -96,7 +99,7 @@ export default function CaseDetailPage() {
       />
 
       {found ? (
-        <Card>
+        <Card className="sticky top-0 z-10" data-tour="case-sticky-header">
           <CardContent className="pt-5">
             <div className="flex flex-wrap items-start justify-between gap-4">
               <div className="min-w-0">
@@ -120,6 +123,11 @@ export default function CaseDetailPage() {
                     {progressPct}% (Step {currentIdx + 1} of {stages.length})
                   </span>
                 </div>
+                <div data-tour="case-progress" className="mt-3">
+                  <div className="h-2 w-full overflow-hidden rounded-full bg-slate-200 dark:bg-slate-800">
+                    <div className="h-full rounded-full bg-qa-primary" style={{ width: `${progressPct}%` }} />
+                  </div>
+                </div>
               </div>
 
               <div className="flex flex-wrap items-center gap-2">
@@ -140,15 +148,27 @@ export default function CaseDetailPage() {
       ) : null}
 
       <div className="grid grid-cols-1 gap-4 xl:grid-cols-12">
-        <Card className="xl:col-span-8">
+        <Card className="xl:col-span-8" data-tour="case-timeline">
           <CardHeader>
             <CardTitle>10-Step Timeline</CardTitle>
           </CardHeader>
           <CardContent className="space-y-2">
             {stages.map((s, idx) => {
               const state = stepState(idx, currentIdx)
+              const tourId =
+                s === 'Extraction'
+                  ? 'case-step-extraction'
+                  : s === 'Sales Order'
+                    ? 'case-step-salesorder'
+                    : s === 'GST E-Invoice'
+                      ? 'case-step-einvoice'
+                      : undefined
               return (
-                <div key={s} className="rounded-xl bg-white px-4 py-3 ring-1 ring-slate-200/60 dark:bg-slate-950 dark:ring-slate-800/70">
+                <div
+                  key={s}
+                  data-tour={tourId}
+                  className="rounded-xl bg-white px-4 py-3 ring-1 ring-slate-200/60 dark:bg-slate-950 dark:ring-slate-800/70"
+                >
                   <div className="flex flex-wrap items-center justify-between gap-3">
                     <div>
                       <div className="text-sm font-semibold text-slate-900 dark:text-slate-50">
@@ -175,7 +195,7 @@ export default function CaseDetailPage() {
           </CardContent>
         </Card>
 
-        <Card className="xl:col-span-4">
+        <Card className="xl:col-span-4" data-tour="case-context-panel">
           <CardHeader>
             <CardTitle>Live Context Panel</CardTitle>
           </CardHeader>
@@ -200,7 +220,23 @@ export default function CaseDetailPage() {
               </div>
             </div>
 
-            <div className="rounded-xl bg-white p-4 ring-1 ring-slate-200/60 dark:bg-slate-950 dark:ring-slate-800/70">
+            <div className="rounded-xl bg-white p-4 ring-1 ring-slate-200/60 dark:bg-slate-950 dark:ring-slate-800/70" data-tour="case-d365-actions">
+              <div className="text-sm font-semibold text-slate-900 dark:text-slate-50">D365 BC Integration</div>
+              <div className="mt-2 text-sm text-slate-600 dark:text-slate-400">Push structured data directly into Business Central with one click.</div>
+              <div className="mt-3 flex flex-wrap items-center gap-2">
+                <Button variant="secondary" onClick={() => toast.message('Create/Update Customer in D365 BC')}>
+                  Create/Update Customer
+                </Button>
+                <Button variant="secondary" onClick={() => toast.message('Create Sales Order in D365 BC')}>
+                  Create Sales Order
+                </Button>
+                <Button variant="secondary" onClick={() => toast.message('Generate Invoice')}>
+                  Generate Invoice
+                </Button>
+              </div>
+            </div>
+
+            <div className="rounded-xl bg-white p-4 ring-1 ring-slate-200/60 dark:bg-slate-950 dark:ring-slate-800/70" data-tour="case-hitl-controls">
               <div className="text-sm font-semibold text-slate-900 dark:text-slate-50">HITL Controls</div>
               <div className="mt-2 text-sm text-slate-600 dark:text-slate-400">Add a mandatory comment before submitting review.</div>
               <div className="mt-2">
@@ -219,8 +255,8 @@ export default function CaseDetailPage() {
         </Card>
       </div>
 
-      <Tabs defaultValue="documents">
-        <TabsList>
+      <Tabs value={tab} onValueChange={setTab}>
+        <TabsList data-tour="case-tabs">
           <TabsTrigger value="documents">Documents</TabsTrigger>
           <TabsTrigger value="extracted">Extracted Data</TabsTrigger>
           <TabsTrigger value="customer">Customer Master</TabsTrigger>
@@ -228,7 +264,9 @@ export default function CaseDetailPage() {
           <TabsTrigger value="tax">Tax Determination</TabsTrigger>
           <TabsTrigger value="approval">Approval & Risk</TabsTrigger>
           <TabsTrigger value="invoice">Invoice & E-Invoice</TabsTrigger>
-          <TabsTrigger value="audit">Audit Trail</TabsTrigger>
+          <TabsTrigger value="audit" data-tour="case-audit-tab">
+            Audit Trail
+          </TabsTrigger>
         </TabsList>
 
         <TabsContent value="documents">
@@ -238,7 +276,7 @@ export default function CaseDetailPage() {
             </CardHeader>
             <CardContent className="grid grid-cols-1 gap-3 xl:grid-cols-12">
               <div className="xl:col-span-8">
-                <div className="rounded-2xl bg-slate-50 p-4 dark:bg-slate-900">
+                <div className="rounded-2xl bg-slate-50 p-4 dark:bg-slate-900" data-tour="case-pdf-viewer">
                   <div className="flex items-center justify-between gap-3">
                     <div className="text-sm font-semibold text-slate-900 dark:text-slate-50">PDF Viewer</div>
                     <Button
@@ -297,7 +335,7 @@ export default function CaseDetailPage() {
         </TabsContent>
 
         <TabsContent value="extracted">
-          <Card>
+          <Card data-tour="case-extracted-form">
             <CardHeader>
               <CardTitle>Extracted Data</CardTitle>
             </CardHeader>
@@ -341,7 +379,7 @@ export default function CaseDetailPage() {
             <CardContent className="space-y-3">
               <div className="flex flex-wrap items-center justify-between gap-3">
                 <div className="text-sm text-slate-600 dark:text-slate-400">Draft preview mirroring D365 structure</div>
-                <Button variant="primary" onClick={() => toast.success('Create in D365 queued')}>
+                <Button variant="primary" onClick={() => toast.success('Create in D365 queued')} data-tour="case-so-create">
                   Create in D365 BC
                 </Button>
               </div>
@@ -415,7 +453,7 @@ export default function CaseDetailPage() {
             <CardHeader>
               <CardTitle>Audit Trail</CardTitle>
             </CardHeader>
-            <CardContent className="space-y-2">
+            <CardContent className="space-y-2" data-tour="case-audit-content">
               {caseEvents.length ? (
                 caseEvents.map((e) => (
                   <div key={e.id} className="rounded-xl bg-slate-50 px-4 py-3 dark:bg-slate-900">
@@ -436,6 +474,13 @@ export default function CaseDetailPage() {
           </Card>
         </TabsContent>
       </Tabs>
+
+      <CaseDetailTour
+        tab={tab}
+        setTab={setTab}
+        hasDocs={documents.length > 0}
+        hasAudit={caseEvents.length > 0}
+      />
     </div>
   )
 }
