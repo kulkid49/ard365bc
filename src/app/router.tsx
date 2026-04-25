@@ -4,6 +4,7 @@ import { AppLayout } from '@/layouts/AppLayout'
 import DashboardPage from '@/pages/Dashboard'
 import CaseDetailPage from '@/pages/CaseDetail'
 import TransactionPipelinePage from '@/pages/TransactionPipeline'
+import EmailInboxPage from '@/pages/EmailInbox'
 import CasesInboxPage from '@/pages/CasesInbox'
 import HitlWorkbenchPage from '@/pages/HitlWorkbench'
 import CustomerMasterPage from '@/pages/CustomerMaster'
@@ -37,6 +38,7 @@ export const router = createBrowserRouter([
     children: [
       { index: true, element: <DashboardPage /> },
       { path: 'pipeline', element: <TransactionPipelinePage /> },
+      { path: 'email-inbox', element: <EmailInboxPage /> },
       { path: 'cases', element: <CasesInboxPage /> },
       { path: 'cases/:caseId', element: <CaseDetailPage /> },
       { path: 'hitl', element: <HitlWorkbenchPage /> },
