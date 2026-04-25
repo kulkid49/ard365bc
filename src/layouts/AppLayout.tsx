@@ -12,6 +12,7 @@ import {
   Code2,
   CreditCard,
   FileText,
+  GitMerge,
   HandCoins,
   LayoutDashboard,
   LifeBuoy,
@@ -54,6 +55,7 @@ const sidebarItems: SideItem[] = [
   { label: 'Audit & Compliance', to: '/audit-compliance', icon: BarChart3 },
   { label: 'Agent Console', to: '/agent-console', icon: Bot },
   { label: 'Reports & Analytics', to: '/reports', icon: BarChart3 },
+  { label: 'Process Flow', to: '/process-flow', icon: GitMerge },
   { label: 'Configuration', to: '/configuration', icon: Settings },
 ]
 
@@ -465,6 +467,8 @@ export function AppLayout() {
                                     ? 'audit'
                                     : pathname.startsWith('/agent-console')
                                       ? 'console'
+                                      : pathname.startsWith('/process-flow')
+                                        ? 'process-flow'
                                       : pathname.startsWith('/configuration')
                                         ? 'config'
                                         : pathname.startsWith('/reports')

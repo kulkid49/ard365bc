@@ -16,6 +16,7 @@ import AuditCompliancePage from '@/pages/AuditCompliance'
 import AgentConsolePage from '@/pages/AgentConsole'
 import ReportsPage from '@/pages/Reports'
 import ConfigurationPage from '@/pages/Configuration'
+import ProcessFlowPage from '@/pages/ProcessFlow'
 import PoIntakeExtractionPage from '@/pages/PoIntake'
 import CustomerValidationOnboardingPage from '@/pages/CustomerValidation'
 import CreditRiskAssessmentPage from '@/pages/CreditAssessment'
@@ -50,6 +51,7 @@ export const router = createBrowserRouter([
       { path: 'audit-compliance', element: <AuditCompliancePage /> },
       { path: 'agent-console', element: <AgentConsolePage /> },
       { path: 'reports', element: <ReportsPage /> },
+      { path: 'process-flow', element: <ProcessFlowPage /> },
       { path: 'configuration', element: <ConfigurationPage /> },
       { path: 'po-intake', element: <PoIntakeExtractionPage /> },
       { path: 'customer-validation', element: <CustomerValidationOnboardingPage /> },
