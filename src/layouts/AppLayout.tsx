@@ -456,11 +456,13 @@ export function AppLayout() {
                               ? 'customers'
                               : pathname.startsWith('/sales-orders')
                                 ? 'billing'
-                          : pathname.startsWith('/cases/') && pathname !== '/cases'
-                            ? 'case'
-                            : pathname.startsWith('/cases')
-                              ? 'cases'
-                              : '1'
+                                : pathname.startsWith('/tax-review')
+                                  ? 'tax'
+                                  : pathname.startsWith('/cases/') && pathname !== '/cases'
+                                    ? 'case'
+                                    : pathname.startsWith('/cases')
+                                      ? 'cases'
+                                      : '1'
                       params.set('tour', tour)
                       navigate(`${pathname}?${params.toString()}`)
                     }}
