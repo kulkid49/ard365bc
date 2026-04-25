@@ -450,6 +450,8 @@ export function AppLayout() {
                       const tour =
                         pathname.startsWith('/pipeline')
                           ? 'pipeline'
+                          : pathname.startsWith('/hitl')
+                            ? 'hitl'
                           : pathname.startsWith('/cases/') && pathname !== '/cases'
                             ? 'case'
                             : pathname.startsWith('/cases')
