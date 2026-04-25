@@ -73,6 +73,86 @@ function edgePath(a: FlowNode, b: FlowNode) {
   }
 }
 
+type RoutedEdge = {
+  d: string
+  labelPos?: { x: number; y: number; anchor?: 'start' | 'middle' | 'end' }
+}
+
+function polyPath(points: Array<{ x: number; y: number }>) {
+  if (points.length < 2) return ''
+  return points
+    .map((p, i) => (i === 0 ? `M ${p.x} ${p.y}` : `L ${p.x} ${p.y}`))
+    .join(' ')
+}
+
+function routeEdge(a: FlowNode, b: FlowNode, e: Edge): RoutedEdge {
+  const aCx = a.x + a.w / 2
+  const aCy = a.y + a.h / 2
+  const bCx = b.x + b.w / 2
+  const bCy = b.y + b.h / 2
+
+  const sameRow = Math.abs(aCy - bCy) < 40
+  const goingRight = bCx > aCx
+
+  if (sameRow) {
+    const start = goingRight ? { x: a.x + a.w, y: aCy } : { x: a.x, y: aCy }
+    const end = goingRight ? { x: b.x, y: bCy } : { x: b.x + b.w, y: bCy }
+    const midX = start.x + (end.x - start.x) / 2
+    return {
+      d: polyPath([
+        start,
+        { x: midX, y: start.y },
+        { x: midX, y: end.y },
+        end,
+      ]),
+      labelPos: e.label ? { x: midX, y: start.y - 10, anchor: 'middle' } : undefined,
+    }
+  }
+
+  const verticalDown = bCy > aCy
+  const start = verticalDown ? { x: aCx, y: a.y + a.h } : { x: aCx, y: a.y }
+  const end = verticalDown ? { x: bCx, y: b.y } : { x: bCx, y: b.y + b.h }
+
+  if (e.from === 'dec-conf' && e.to === 'hitl') {
+    const laneX = a.x + a.w + 22
+    const midY = (start.y + end.y) / 2
+    return {
+      d: polyPath([start, { x: laneX, y: start.y }, { x: laneX, y: midY }, { x: end.x, y: midY }, end]),
+      labelPos: e.label ? { x: laneX + 6, y: midY - 10, anchor: 'start' } : undefined,
+    }
+  }
+
+  if (e.from === 'hitl' && e.to === 'extract') {
+    const laneX = Math.min(a.x, b.x) - 60
+    const laneY = b.y + b.h + 24
+    return {
+      d: polyPath([
+        { x: a.x, y: aCy },
+        { x: laneX, y: aCy },
+        { x: laneX, y: laneY },
+        { x: bCx, y: laneY },
+        { x: bCx, y: b.y + b.h },
+      ]),
+      labelPos: e.label ? { x: laneX + 10, y: laneY - 10, anchor: 'start' } : undefined,
+    }
+  }
+
+  if (Math.abs(start.x - end.x) < 18) {
+    const midY = start.y + (end.y - start.y) / 2
+    return {
+      d: polyPath([start, { x: start.x, y: midY }, end]),
+      labelPos: e.label ? { x: start.x + 8, y: midY - 10, anchor: 'start' } : undefined,
+    }
+  }
+
+  const laneY = verticalDown ? start.y + 26 : start.y - 26
+  const midX = start.x + (end.x - start.x) / 2
+  return {
+    d: polyPath([start, { x: start.x, y: laneY }, { x: midX, y: laneY }, { x: midX, y: end.y }, end]),
+    labelPos: e.label ? { x: midX, y: laneY - 10, anchor: 'middle' } : undefined,
+  }
+}
+
 function diamondPoints(x: number, y: number, w: number, h: number) {
   const cx = x + w / 2
   const cy = y + h / 2
@@ -227,7 +307,7 @@ export default function ProcessFlowPage() {
         label: 'HITL Review',
         kind: 'hitl',
         x: 560,
-        y: 165,
+        y: 190,
         w: 210,
         h: 66,
         route: '/hitl',
@@ -265,7 +345,7 @@ export default function ProcessFlowPage() {
         label: '4. Sales Order',
         kind: 'd365',
         x: 790,
-        y: 290,
+        y: 320,
         w: 220,
         h: 66,
         route: '/sales-orders',
@@ -284,7 +364,7 @@ export default function ProcessFlowPage() {
         label: '5. Tax Validation',
         kind: 'hitl',
         x: 530,
-        y: 290,
+        y: 320,
         w: 220,
         h: 66,
         route: '/tax-review',
@@ -303,7 +383,7 @@ export default function ProcessFlowPage() {
         label: '6. Approvals',
         kind: 'hitl',
         x: 270,
-        y: 290,
+        y: 320,
         w: 220,
         h: 66,
         route: '/approvals',
@@ -322,7 +402,7 @@ export default function ProcessFlowPage() {
         label: '7–8. Post + Invoice',
         kind: 'd365',
         x: 60,
-        y: 290,
+        y: 320,
         w: 240,
         h: 66,
         route: '/e-invoice-dispatch',
@@ -341,7 +421,7 @@ export default function ProcessFlowPage() {
         label: '9. GST E‑Invoice (IRP)',
         kind: 'irp',
         x: 60,
-        y: 455,
+        y: 560,
         w: 240,
         h: 66,
         route: '/e-invoice-dispatch',
@@ -360,7 +440,7 @@ export default function ProcessFlowPage() {
         label: '10. Dispatch',
         kind: 'auto',
         x: 350,
-        y: 455,
+        y: 560,
         w: 200,
         h: 66,
         route: '/e-invoice-dispatch',
@@ -379,7 +459,7 @@ export default function ProcessFlowPage() {
         label: 'Completed + Audit',
         kind: 'end',
         x: 580,
-        y: 455,
+        y: 560,
         w: 210,
         h: 66,
         route: '/audit-compliance',
@@ -492,7 +572,7 @@ export default function ProcessFlowPage() {
                 'relative overflow-hidden rounded-2xl bg-slate-50 ring-1 ring-slate-200/60 dark:bg-slate-900 dark:ring-slate-800/70',
                 dragging && 'cursor-grabbing',
               )}
-              style={{ height: 520 }}
+              style={{ height: 600 }}
               onWheel={onWheel}
               onMouseDown={onMouseDown}
               onMouseMove={onMouseMove}
@@ -527,7 +607,7 @@ export default function ProcessFlowPage() {
                   willChange: 'transform',
                 }}
               >
-                <svg ref={svgRef} width={1100} height={610} viewBox="0 0 1100 610" role="img" aria-label="Agentic AR process flow">
+                <svg ref={svgRef} width={1100} height={740} viewBox="0 0 1100 740" role="img" aria-label="Agentic AR process flow">
                   <defs>
                     <marker id="arrow" markerWidth="10" markerHeight="10" refX="10" refY="5" orient="auto" markerUnits="strokeWidth">
                       <path d="M0,0 L10,5 L0,10 z" fill="#334155" />
@@ -541,10 +621,15 @@ export default function ProcessFlowPage() {
 
                     const loop = e.from === e.to
                     if (loop) {
-                      const r = 26
-                      const cx = a.x + a.w - 18
-                      const cy = a.y - 10
-                      const d = `M ${cx} ${cy} c ${r} -${r} ${r * 2} ${r} ${r} ${r * 2}`
+                      const sx = a.x + a.w
+                      const sy = a.y + a.h * 0.35
+                      const ex = a.x + a.w
+                      const ey = a.y + a.h * 0.68
+                      const c1x = a.x + a.w + 90
+                      const c1y = a.y - 16
+                      const c2x = a.x + a.w + 90
+                      const c2y = a.y + a.h + 16
+                      const d = `M ${sx} ${sy} C ${c1x} ${c1y}, ${c2x} ${c2y}, ${ex} ${ey}`
                       return (
                         <g key={`${e.from}-${e.to}-${idx}`}>
                           <path
@@ -555,9 +640,11 @@ export default function ProcessFlowPage() {
                             markerEnd="url(#arrow)"
                             strokeDasharray={e.dashed ? '6 6' : undefined}
                             opacity={e.dashed ? 0.7 : 1}
+                            strokeLinecap="round"
+                            strokeLinejoin="round"
                           />
                           {e.label ? (
-                            <text x={cx + r * 0.9} y={cy - 8} fontSize={10} fill="#334155">
+                            <text x={a.x + a.w + 70} y={a.y - 18} fontSize={10} fill="#334155" textAnchor="middle">
                               {e.label}
                             </text>
                           ) : null}
@@ -565,7 +652,7 @@ export default function ProcessFlowPage() {
                       )
                     }
 
-                    const path = edgePath(a, b)
+                    const path = routeEdge(a, b, e)
                     return (
                       <g key={`${e.from}-${e.to}-${idx}`}>
                         <path
@@ -576,9 +663,17 @@ export default function ProcessFlowPage() {
                           markerEnd="url(#arrow)"
                           strokeDasharray={e.dashed ? '6 6' : undefined}
                           opacity={e.dashed ? 0.7 : 1}
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
                         />
-                        {e.label ? (
-                          <text x={path.mid.x} y={path.mid.y - 10} fontSize={10} fill="#334155" textAnchor="middle">
+                        {e.label && path.labelPos ? (
+                          <text
+                            x={path.labelPos.x}
+                            y={path.labelPos.y}
+                            fontSize={10}
+                            fill="#334155"
+                            textAnchor={path.labelPos.anchor ?? 'middle'}
+                          >
                             {e.label}
                           </text>
                         ) : null}
