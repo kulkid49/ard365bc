@@ -5,6 +5,7 @@ import { toast } from 'sonner'
 
 import { getCustomers } from '@/api/mockApi'
 import { PageHeader } from '@/components/common/PageHeader'
+import { CustomerMasterTour } from '@/components/common/CustomerMasterTour'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
@@ -54,19 +55,22 @@ export default function CustomerMasterPage() {
 
   return (
     <div className="space-y-6">
-      <PageHeader
-        title="Customer Master Management"
-        subtitle={`D365 Synced Customers • ${customers.length.toLocaleString()} Total • ${customers.filter((c) => c.aiStatus === 'New').length} New Today`}
-        actions={[
-          { label: 'New Customer', variant: 'secondary', onClick: () => toast.message('Manual onboarding triggered') },
-          { label: 'Bulk Import', variant: 'secondary', onClick: () => toast.message('Import flow opens') },
-          { label: 'Sync All with D365', variant: 'secondary', onClick: () => toast.success('Sync queued') },
-          { label: 'Export Master Data', variant: 'secondary', onClick: () => toast.message('Export started') },
-        ]}
-      />
+      <div data-tour="cust-header">
+        <PageHeader
+          title="Customer Master Management"
+          subtitle={`D365 Synced Customers • ${customers.length.toLocaleString()} Total • ${customers.filter((c) => c.aiStatus === 'New').length} New Today`}
+          actions={[
+            { label: 'New Customer', variant: 'secondary', onClick: () => toast.message('Manual onboarding triggered') },
+            { label: 'Bulk Import', variant: 'secondary', onClick: () => toast.message('Import flow opens') },
+            { label: 'Sync All with D365', variant: 'secondary', onClick: () => toast.success('Sync queued') },
+            { label: 'Export Master Data', variant: 'secondary', onClick: () => toast.message('Export started') },
+          ]}
+          actionsDataTour="cust-bulk-ops"
+        />
+      </div>
 
       <Tabs value={tab} onValueChange={(v) => setTab(v as typeof tab)}>
-        <TabsList>
+        <TabsList data-tour="cust-tabs">
           <TabsTrigger value="all">All Customers</TabsTrigger>
           <TabsTrigger value="new">New / Pending</TabsTrigger>
           <TabsTrigger value="duplicates">Duplicates & Conflicts</TabsTrigger>
@@ -76,7 +80,7 @@ export default function CustomerMasterPage() {
 
         <TabsContent value={tab}>
           <div className="grid grid-cols-1 gap-4 xl:grid-cols-12">
-            <Card className="xl:col-span-7">
+            <Card className="xl:col-span-7" data-tour="cust-table">
               <CardHeader>
                 <div className="flex flex-wrap items-center justify-between gap-3">
                   <CardTitle>Customer List</CardTitle>
@@ -121,11 +125,11 @@ export default function CustomerMasterPage() {
                   <Table>
                     <TableHeader>
                       <TableRow>
-                        <TableHead>Customer</TableHead>
+                        <TableHead data-tour="cust-col-name">Customer</TableHead>
                         <TableHead>GSTIN</TableHead>
-                        <TableHead>D365 ID</TableHead>
-                        <TableHead>Status</TableHead>
-                        <TableHead>Last Synced</TableHead>
+                        <TableHead data-tour="cust-col-d365">D365 ID</TableHead>
+                        <TableHead data-tour="cust-col-status">Status</TableHead>
+                        <TableHead data-tour="cust-col-last">Last Synced</TableHead>
                       </TableRow>
                     </TableHeader>
                     <TableBody>
@@ -150,7 +154,7 @@ export default function CustomerMasterPage() {
               </CardContent>
             </Card>
 
-            <Card className="xl:col-span-5">
+            <Card className="xl:col-span-5" data-tour={onboarding ? 'cust-wizard' : 'cust-detail'}>
               <CardHeader>
                 <div className="flex flex-wrap items-start justify-between gap-3">
                   <div>
@@ -189,7 +193,11 @@ export default function CustomerMasterPage() {
                         { step: 'Step 4', t: 'D365 Creation', d: 'Preview payload and create customer', v: 'Pending' },
                         { step: 'Step 5', t: 'Approval & Finalization', d: 'Mandatory comment and link to case', v: 'Pending' },
                       ].map((s, idx) => (
-                        <div key={s.t} className="rounded-xl bg-slate-50 px-4 py-3 dark:bg-slate-900">
+                        <div
+                          key={s.t}
+                          data-tour={s.t === 'Duplicate Check' ? 'cust-duplicate' : undefined}
+                          className="rounded-xl bg-slate-50 px-4 py-3 dark:bg-slate-900"
+                        >
                           <div className="flex items-start justify-between gap-3">
                             <div>
                               <div className="text-xs font-semibold uppercase tracking-wide text-slate-400">{s.step}</div>
@@ -201,7 +209,7 @@ export default function CustomerMasterPage() {
                         </div>
                       ))}
 
-                      <div className="grid grid-cols-1 gap-2">
+                      <div className="grid grid-cols-1 gap-2" data-tour="cust-d365-actions">
                         <Button variant="secondary" onClick={() => toast.success('Duplicate check complete')}>
                           <Sparkles className="mr-2 h-4 w-4" />
                           Run Duplicate Check
@@ -212,11 +220,22 @@ export default function CustomerMasterPage() {
                         <Button variant="secondary" onClick={() => toast.success('Approved and linked to case')}>
                           Approve & Link to Case
                         </Button>
+                        <div className="grid grid-cols-1 gap-2 rounded-xl bg-white p-3 ring-1 ring-slate-200/60 dark:bg-slate-950 dark:ring-slate-800/70" data-tour="cust-action-bar">
+                          <Button variant="primary" onClick={() => toast.success('Approved and linked to case')}>
+                            Approve & Link to Case
+                          </Button>
+                          <Button variant="secondary" onClick={() => toast.success('Saved draft')}>
+                            Save Draft
+                          </Button>
+                          <Button variant="secondary" onClick={() => toast.message('Escalated')}>
+                            Escalate
+                          </Button>
+                        </div>
                       </div>
                     </div>
                   ) : (
                     <div className="space-y-3">
-                      <div className="rounded-xl bg-slate-50 px-4 py-3 dark:bg-slate-900">
+                      <div className="rounded-xl bg-slate-50 px-4 py-3 dark:bg-slate-900" data-tour="cust-d365-actions">
                         <div className="text-xs font-semibold uppercase tracking-wide text-slate-400">D365 Sync Panel</div>
                         <div className="mt-2 flex items-center justify-between gap-3">
                           <div className="text-sm text-slate-700 dark:text-slate-300">Status</div>
@@ -250,6 +269,18 @@ export default function CustomerMasterPage() {
                           </div>
                         ))}
                       </div>
+
+                      <div className="grid grid-cols-1 gap-2 rounded-xl bg-white p-3 shadow-sm ring-1 ring-slate-200/60 dark:bg-slate-950 dark:ring-slate-800/70" data-tour="cust-action-bar">
+                        <Button variant="primary" onClick={() => toast.success('Approved and linked to case')}>
+                          Approve & Link to Case
+                        </Button>
+                        <Button variant="secondary" onClick={() => toast.success('Saved draft')}>
+                          Save Draft
+                        </Button>
+                        <Button variant="secondary" onClick={() => toast.message('Escalated')}>
+                          Escalate
+                        </Button>
+                      </div>
                     </div>
                   )
                 ) : (
@@ -260,6 +291,14 @@ export default function CustomerMasterPage() {
           </div>
         </TabsContent>
       </Tabs>
+
+      <CustomerMasterTour
+        tab={tab}
+        setTab={setTab}
+        customers={customers}
+        selectedId={selectedId}
+        setSelectedId={setSelectedId}
+      />
     </div>
   )
 }

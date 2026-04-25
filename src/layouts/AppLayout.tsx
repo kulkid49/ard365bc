@@ -452,6 +452,8 @@ export function AppLayout() {
                           ? 'pipeline'
                           : pathname.startsWith('/hitl')
                             ? 'hitl'
+                            : pathname.startsWith('/customers')
+                              ? 'customers'
                           : pathname.startsWith('/cases/') && pathname !== '/cases'
                             ? 'case'
                             : pathname.startsWith('/cases')
