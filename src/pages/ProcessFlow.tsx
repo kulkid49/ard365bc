@@ -352,7 +352,7 @@ export default function ProcessFlowPage() {
         id: 'appr',
         label: '6. Approvals',
         kind: 'hitl',
-        x: 270,
+        x: 290,
         y: 320,
         w: 220,
         h: 66,
@@ -371,7 +371,7 @@ export default function ProcessFlowPage() {
         id: 'post',
         label: '7–8. Post + Invoice',
         kind: 'd365',
-        x: 60,
+        x: 30,
         y: 320,
         w: 240,
         h: 66,
@@ -390,7 +390,7 @@ export default function ProcessFlowPage() {
         id: 'irp',
         label: '9. GST E‑Invoice (IRP)',
         kind: 'irp',
-        x: 60,
+        x: 30,
         y: 560,
         w: 240,
         h: 66,
@@ -591,14 +591,15 @@ export default function ProcessFlowPage() {
 
                     const loop = e.from === e.to
                     if (loop) {
-                      const sx = a.x + a.w
-                      const sy = a.y + a.h * 0.35
-                      const ex = a.x + a.w
-                      const ey = a.y + a.h * 0.68
-                      const c1x = a.x + a.w + 90
-                      const c1y = a.y - 16
-                      const c2x = a.x + a.w + 90
-                      const c2y = a.y + a.h + 16
+                      const sy = a.y + a.h
+                      const sx = a.x + a.w * 0.76
+                      const ex = a.x + a.w * 0.24
+                      const ey = a.y + a.h
+                      const depth = e.from === 'irp' ? 64 : 56
+                      const c1x = sx
+                      const c1y = sy + depth
+                      const c2x = ex
+                      const c2y = ey + depth
                       const d = `M ${sx} ${sy} C ${c1x} ${c1y}, ${c2x} ${c2y}, ${ex} ${ey}`
                       return (
                         <g key={`${e.from}-${e.to}-${idx}`}>
@@ -614,7 +615,7 @@ export default function ProcessFlowPage() {
                             strokeLinejoin="round"
                           />
                           {e.label ? (
-                            <text x={a.x + a.w + 70} y={a.y - 18} fontSize={10} fill="#334155" textAnchor="middle">
+                            <text x={a.x + a.w / 2} y={sy + depth + 16} fontSize={10} fill="#334155" textAnchor="middle">
                               {e.label}
                             </text>
                           ) : null}
